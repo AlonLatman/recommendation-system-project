@@ -3,16 +3,8 @@ import string
 import numpy as np
 import random
 import secrets
-from sklearn.model_selection import GridSearchCV
-import secretsharing as shamir
-import tss as tss
-from sklearn.linear_model import Lasso, ElasticNet
-from sklearn.model_selection import train_test_split
-import shamir
 import pandas as pd
-import os
 from tkinter import Entry, Button, filedialog, Tk
-
 from sklearn.utils.extmath import randomized_svd
 
 
