@@ -46,6 +46,8 @@ recommend_items: Recommends items to the user based on the model's predictions.
 
 # Example
 The following example demonstrates how to use the code to create a recommender system for user-item ratings data:
+<pre>
+```python
 import pandas as pd
 import numpy as np
 from recommender_system import apply_differential_privacy, encrypt_data, generate_shares, train_model, recommend_items
@@ -61,5 +63,6 @@ model = train_model(differentially_private_data)
 user_id = 5
 recommended_items = recommend_items(model, user_id)
 print("Recommended items for user", user_id, ":", recommended_items)
+</pre>
 
 The code reads user-item ratings data from an Excel file, performs matrix factorization with differential privacy, and recommends items for a specific user based on the trained model.
