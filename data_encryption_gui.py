@@ -201,9 +201,6 @@ class GUIApp2:
     def __init__(self, root):
         self.root = root
         self.root.title("Recommender System GUI")
-
-        # Create and pack other elements of the GUI here
-
         # Create the Differential privacy button
         self.privacy_button = tk.Button(root, text="Matrix_factorization", command=self.open_wikipedia_page, bg="green")
         self.privacy_button.pack()
@@ -217,9 +214,6 @@ class GUIApp3:
     def __init__(self, root):
         self.root = root
         self.root.title("Recommender System GUI")
-
-        # Create and pack other elements of the GUI here
-
         # Create the Differential privacy button
         self.privacy_button = tk.Button(root, text="Blum Blum Shub", command=self.open_wikipedia_page, bg="green")
         self.privacy_button.pack()
@@ -232,11 +226,12 @@ class GUIApp3:
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Data Encryption App")
+    # boot the main GUI window
     app = DataEncryptionApp(root)
-
     # Add the "Lab Report" button
     lab_report_button = tk.Button(root, text="Lab Report", command=app.show_lab_report)
     lab_report_button.pack(pady=5)
+    # Add 3 buttons with links to wikipedia
     app = GUIApp(root)
     app = GUIApp2(root)
     app = GUIApp3(root)
