@@ -1,18 +1,16 @@
 # recommendation-system-project
 This repository contains Python code for a simple recommender system based on matrix factorization. The code uses Singular Value Decomposition (SVD) to factorize user-item interaction data and provide item recommendations to users.
 
-Table of Contents
-Introduction
-Dependencies
-Usage
-Functions
-Example
-Contributing
-License
+* Table of Contents
+* Introduction
+* Dependencies
+* Usage
+* Functions
+* Example
 Introduction
 The code in this repository provides a basic matrix factorization-based recommender system. It demonstrates how to perform matrix factorization using Singular Value Decomposition (SVD) to extract latent features from user-item interaction data. The latent features are then used to make item recommendations to users.
 
-Dependencies
+# Dependencies
 The code depends on the following Python libraries:
 
 numpy: For numerical operations and matrix manipulations.
@@ -23,7 +21,7 @@ tkinter: For creating a simple GUI.
 You can install the required libraries using pip:
 "pip install numpy pandas scikit-learn secretsharing"
 
-Usage:
+# Usage
 Clone this repository to your local machine.
 Install the required dependencies as mentioned in the Dependencies section.
 The main code is in the recommender_system.py file. You can run the code from the terminal using:
@@ -31,7 +29,7 @@ The main code is in the recommender_system.py file. You can run the code from th
 The script will open a simple graphical user interface (GUI) using Tkinter. You can browse and select an Excel file containing user-item ratings data.
 The code will perform matrix factorization and provide item recommendations for a specific user based on the trained model.
 
-Functions
+# Functions
 The main code includes the following functions:
 
 apply_differential_privacy: Applies differential privacy to the data using Laplace noise.
@@ -46,39 +44,22 @@ train_model: Trains the matrix factorization model on the given shares.
 reconstruct_ratings: Reconstructs ratings from differentially private data using SVD.
 recommend_items: Recommends items to the user based on the model's predictions.
 
-Example
+# Example
 The following example demonstrates how to use the code to create a recommender system for user-item ratings data:
-# Load the required libraries and functions
 import pandas as pd
 import numpy as np
 from recommender_system import apply_differential_privacy, encrypt_data, generate_shares, train_model, recommend_items
-
-# Read data from an Excel file
 df = pd.read_excel("user_item_ratings.xlsx")
-
-# Process the data and create a user-item matrix
 user_item_grouped = df.groupby(['user_id', 'item_id'], as_index=False).mean()
 user_item_matrix = user_item_grouped.pivot(index='user_id', columns='item_id', values='rating')
 user_item_matrix.fillna(0, inplace=True)
 data = user_item_matrix.to_numpy(dtype=np.float32)
-
-# Encrypt the data
 encrypted_data = encrypt_data(data)
-
-# Generate shares of the data
 shares = generate_shares(encrypted_data, threshold=7)
-
-# Apply differential privacy to the data
 differentially_private_data = apply_differential_privacy(shares, epsilon=0.1)
-
-# Train the model
 model = train_model(differentially_private_data)
-
-# Recommend items to a user (user_id=5)
 user_id = 5
 recommended_items = recommend_items(model, user_id)
-
-# Print the recommended items
 print("Recommended items for user", user_id, ":", recommended_items)
 
 The code reads user-item ratings data from an Excel file, performs matrix factorization with differential privacy, and recommends items for a specific user based on the trained model.
