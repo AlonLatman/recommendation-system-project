@@ -62,7 +62,7 @@ differentially_private_data = apply_differential_privacy(shares, epsilon=0.1)
 model = train_model(differentially_private_data)
 user_id = 5
 recommended_items = recommend_items(model, user_id)
-`print("Recommended items for user", user_id, ":", recommended_items)`
+print("Recommended items for user", user_id, ":", recommended_items)
 </pre>
 
 The code reads user-item ratings data from an Excel file, performs matrix factorization with differential privacy, and recommends items for a specific user based on the trained model.
