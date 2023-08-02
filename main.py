@@ -215,7 +215,7 @@ def is_valid_excel_file(file_path):
 try:
   file_path = "path_to_your_excel_file.xlsx"
   if is_valid_excel_file(file_path):
-    print("Excel file validation successful.")
+    print("Excel file validation boot up successful.")
   else:
     print("Excel file validation failed.")
 except CustomError as custom_error:
@@ -383,11 +383,6 @@ def apply_differential_privacy(data, epsilon):
       >>> apply_differential_privacy(data, epsilon)
       array([ 1.64781335,  2.18108242,  2.78087762,  4.22627881, -2.00924563])
   """
-  # sensitivity = 1.0 / epsilon
-  # shape = data.shape
-  # noise = np.random.laplace(loc=0, scale=sensitivity, size=shape)
-  # differentially_private_data = data + noise
-  # return differentially_private_data
   if not isinstance(data, np.ndarray):
     raise TypeError("Invalid data type. The data should be a NumPy array.")
 
