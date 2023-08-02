@@ -174,15 +174,19 @@ def generate_numeric_key(hash_value):
       >>> generate_numeric_key(hash_value)
       595485517017238652520760113982827246876318508928305
   """
-  # Convert the hash value to a decimal representation.
-  decimal_hash = int(hash_value, 16)
+  if not isinstance(hash_value, str):
+    raise TypeError("The secret_key should be a string.")
 
-  # Perform additional mathematical operations to derive a numeric key.
-  key = decimal_hash ** 2 - 3 * decimal_hash + 7
+  # Hash the secret_key using SHA-256
+  hashed_key = hashlib.sha256(hash_value.encode()).hexdigest()
 
-  enhanced_key = key ^ 0xABCDEFAA11223344
+  # Convert the hashed_key to an integer
+  key = int(hashed_key, 16)
 
-  return enhanced_key
+  # Truncate or pad the numeric_key to the specified length
+  key %= 10 ** 16
+
+  return key
 
 
 class CustomError(Exception):
