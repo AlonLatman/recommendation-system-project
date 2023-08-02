@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 import pandas as pd
 import numpy as np
 import webbrowser
@@ -38,23 +38,28 @@ Implementation Details:
    - The data is converted into a numerical matrix format.
    - The numerical matrix is encrypted using a secure encryption algorithm.
    - The encryption process is performed in a way that ensures the data privacy is maintained.
+   - Encryption Formula: Encrypted_Data = Encrypt(Data, Key)
 
 3. Secret Sharing:
    - The encrypted data is divided into multiple shares using a secret sharing scheme.
    - The number of shares required to reconstruct the original data is specified by the threshold.
-
+   - Secret Sharing Formula: Shares = Split(Encrypted_Data,Threshold).
+   
 4. Differential Privacy:
    - Differential privacy is applied to the shares to add noise and protect individual user ratings.
    - Laplace noise is commonly used in differential privacy mechanisms.
-
+   - Differential Privacy Formula: DP_Data = Original_Data + Laplace_Noise.
+   
 5. Matrix Factorization:
    - The differentially private shares are combined to reconstruct the encrypted matrix.
    - Matrix factorization is applied to the reconstructed matrix to learn the latent features of users and items.
-
+   - Matrix Factorization Formula: DP_Data ≈ U * V^T.
+   
 6. Item Recommendation:
    - The matrix factorization model is used to predict user-item ratings.
    - Based on the predicted ratings, items are recommended to a specific user.
-
+   - Recommendation Formula: Predicted_Rating = U[user] * V[item].
+   
 Example:
 ---------
 
@@ -109,7 +114,6 @@ Instructions:
 3. The recommended items for user ID 5 will be displayed in a message box.
 
 """
-
 
 class DataEncryptionApp:
     def __init__(self, root):
