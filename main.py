@@ -680,11 +680,11 @@ def browse_file():
 
         # Print the recommended items.
         print("Recommended items for user", user_id, ":", recommended_items)
+      except CustomError:
+             display_error_message("An error occurred while processing the file.")
       except Exception as e:
         # Handle the exception, show an error message, or log the error.
         print("Error loading file:", e)
-      except CustomError:
-             display_error_message("An error occurred while processing the file.")
       except Exception:
              display_error_message("An unexpected error occurred. Please contact the administrator for assistance.")
 
