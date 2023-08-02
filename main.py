@@ -5,6 +5,8 @@ import random
 import secrets
 import pandas as pd
 from tkinter import Entry, Button, filedialog, Tk
+
+from openpyxl.reader.excel import load_workbook
 from sklearn.utils.extmath import randomized_svd
 
 
@@ -46,38 +48,38 @@ def encrypt_data(data):
 
 
 def generate_encryption_key():
-    """
-    Generates a secure encryption key using the secrets module.
+  """
+  Generates a secure encryption key using the secrets module.
 
-    Returns:
-        int: A numeric encryption key.
+  Returns:
+      int: A numeric encryption key.
 
-    Notes:
-        This function generates a cryptographically secure encryption key by following these steps:
+  Notes:
+      This function generates a cryptographically secure encryption key by following these steps:
 
-        1. It first generates 32 cryptographically strong random bytes using the 'secrets.token_bytes(32)' function
-           from the 'secrets' module. The 'token_bytes' function provides a source of random data suitable for
-           generating secure tokens.
+      1. It first generates 32 cryptographically strong random bytes using the 'secrets.token_bytes(32)' function
+         from the 'secrets' module. The 'token_bytes' function provides a source of random data suitable for
+         generating secure tokens.
 
-        2. It then computes the SHA-256 hash of the random bytes using the 'hashlib.sha256()' function from the
-           'hashlib' module. The SHA-256 algorithm is a widely used cryptographic hash function that produces a
-           256-bit (32-byte) hash value.
+      2. It then computes the SHA-256 hash of the random bytes using the 'hashlib.sha256()' function from the
+         'hashlib' module. The SHA-256 algorithm is a widely used cryptographic hash function that produces a
+         256-bit (32-byte) hash value.
 
-        3. The resulting hash value is passed to the function 'generate_numeric_key()' to generate a numeric key.
-           The details of the 'generate_numeric_key()' function are not shown here, but it should convert the hash
-           value into a numeric representation suitable for use as an encryption key.
+      3. The resulting hash value is passed to the function 'generate_numeric_key()' to generate a numeric key.
+         The details of the 'generate_numeric_key()' function are not shown here, but it should convert the hash
+         value into a numeric representation suitable for use as an encryption key.
 
-        4. The numeric encryption key is returned by the function.
+      4. The numeric encryption key is returned by the function.
 
-    Example:
-        >>> key = generate_encryption_key()
-        >>> key
-        24895273430718236079139628235034064624841537189789241483231818188378129781226
-    """
-    random_bytes = secrets.token_bytes(32)  # Generate 32 cryptographically strong random bytes
-    hash_value = hashlib.sha256(random_bytes).hexdigest()  # Compute SHA-256 hash of the random bytes
-    key = generate_numeric_key(hash_value)  # Generate a numeric key from the hash value
-    return key
+  Example:
+      >>> key = generate_encryption_key()
+      >>> key
+      24895273430718236079139628235034064624841537189789241483231818188378129781226
+  """
+  random_bytes = secrets.token_bytes(32)  # Generate 32 cryptographically strong random bytes
+  hash_value = hashlib.sha256(random_bytes).hexdigest()  # Compute SHA-256 hash of the random bytes
+  key = generate_numeric_key(hash_value)  # Generate a numeric key from the hash value
+  return key
 
 
 def generate_random_string(length=32):
@@ -180,6 +182,53 @@ def generate_numeric_key(hash_value):
   key = decimal_hash ** 2 - 3 * decimal_hash + 7
 
   return key
+
+class CustomError(Exception):
+    """Custom exception class for better error handling and reporting."""
+
+    def __init__(self, message, error_code=None):
+      super().__init__(message)
+      self.error_code = error_code
+
+
+def is_valid_excel_file(file_path):
+  """
+  Validates if the given file is a valid Excel file.
+
+  Parameters:
+      file_path (str): The path to the Excel file to be validated.
+
+  Returns:
+      bool: True if the file is a valid Excel file, False otherwise.
+  """
+  try:
+    if not file_path.endswith(".xlsx"):
+      raise CustomError("Invalid file format. Please provide an Excel file.", error_code=1)
+
+    return True
+  except CustomError as custom_error:
+    raise custom_error
+  except Exception as e:
+    raise CustomError("An error occurred while validating the input file.", error_code=2)
+
+
+try:
+  file_path = "path_to_your_excel_file.xlsx"
+  if is_valid_excel_file(file_path):
+    print("Excel file validation successful.")
+  else:
+    print("Excel file validation failed.")
+except CustomError as custom_error:
+  if custom_error.error_code == 1:
+    print("Error:", custom_error)
+    print("Please provide an Excel file.")
+  elif custom_error.error_code == 2:
+    print("Error:", custom_error)
+    print("An unexpected error occurred during validation.")
+  else:
+    print("An unknown error occurred:", custom_error)
+except Exception as e:
+  print("An unexpected error occurred:", e)
 
 
 def apply_encryption_transformations(data, key):
@@ -300,66 +349,66 @@ def generate_shares(data, threshold):
 
 
 def apply_differential_privacy(data, epsilon):
-    """
-    Applies differential privacy to the input data using Laplace noise.
+  """
+  Applies differential privacy to the input data using Laplace noise.
 
-    Parameters:
-        data (numpy.ndarray): The input data to be made differentially private. It should be a numpy array.
-        epsilon (float): The privacy parameter representing the desired level of privacy. It should be a positive value.
+  Parameters:
+      data (numpy.ndarray): The input data to be made differentially private. It should be a numpy array.
+      epsilon (float): The privacy parameter representing the desired level of privacy. It should be a positive value.
 
-    Returns:
-        numpy.ndarray: The differentially private data as a numpy array of the same shape as the input data.
+  Returns:
+      numpy.ndarray: The differentially private data as a numpy array of the same shape as the input data.
 
-    Notes:
-        This function adds Laplace noise to the input data to achieve differential privacy. Differential privacy is a
-        technique that aims to protect the privacy of individual data points while allowing useful statistical analysis
-        of the aggregated data.
+  Notes:
+      This function adds Laplace noise to the input data to achieve differential privacy. Differential privacy is a
+      technique that aims to protect the privacy of individual data points while allowing useful statistical analysis
+      of the aggregated data.
 
-        The 'epsilon' parameter represents the privacy budget, and it determines the amount of noise to be added.
-        A smaller value of 'epsilon' provides stronger privacy guarantees but may result in more noise being added,
-        which can reduce the utility of the data for statistical analysis.
+      The 'epsilon' parameter represents the privacy budget, and it determines the amount of noise to be added.
+      A smaller value of 'epsilon' provides stronger privacy guarantees but may result in more noise being added,
+      which can reduce the utility of the data for statistical analysis.
 
-        The 'sensitivity' of the data is calculated as '1.0 / epsilon'. It represents the maximum amount that an
-        individual data point can change without causing a significant change in the overall analysis results.
+      The 'sensitivity' of the data is calculated as '1.0 / epsilon'. It represents the maximum amount that an
+      individual data point can change without causing a significant change in the overall analysis results.
 
-        Laplace noise is generated using 'np.random.laplace()' with mean (loc) as 0 and scale as the sensitivity.
+      Laplace noise is generated using 'np.random.laplace()' with mean (loc) as 0 and scale as the sensitivity.
 
-        The generated Laplace noise is added to the input data, element-wise, to produce the differentially private data.
+      The generated Laplace noise is added to the input data, element-wise, to produce the differentially private data.
 
-        The resulting differentially private data is returned as a numpy array with the same shape as the input data.
+      The resulting differentially private data is returned as a numpy array with the same shape as the input data.
 
-    Example:
-        >>> data = np.array([1, 2, 3, 4, 5])
-        >>> epsilon = 0.5
-        >>> apply_differential_privacy(data, epsilon)
-        array([ 1.64781335,  2.18108242,  2.78087762,  4.22627881, -2.00924563])
-    """
-    # sensitivity = 1.0 / epsilon
-    # shape = data.shape
-    # noise = np.random.laplace(loc=0, scale=sensitivity, size=shape)
-    # differentially_private_data = data + noise
-    # return differentially_private_data
-    if not isinstance(data, np.ndarray):
-        raise TypeError("Invalid data type. The data should be a NumPy array.")
+  Example:
+      >>> data = np.array([1, 2, 3, 4, 5])
+      >>> epsilon = 0.5
+      >>> apply_differential_privacy(data, epsilon)
+      array([ 1.64781335,  2.18108242,  2.78087762,  4.22627881, -2.00924563])
+  """
+  # sensitivity = 1.0 / epsilon
+  # shape = data.shape
+  # noise = np.random.laplace(loc=0, scale=sensitivity, size=shape)
+  # differentially_private_data = data + noise
+  # return differentially_private_data
+  if not isinstance(data, np.ndarray):
+    raise TypeError("Invalid data type. The data should be a NumPy array.")
 
-    sensitivity = 1.0 / epsilon
-    shape = data.shape
-    noise = np.random.laplace(loc=0, scale=sensitivity, size=shape)
+  sensitivity = 1.0 / epsilon
+  shape = data.shape
+  noise = np.random.laplace(loc=0, scale=sensitivity, size=shape)
 
-    # Rescale the noise to meet the privacy requirements
-    max_noise = np.max(np.abs(noise))
-    privacy_threshold = sensitivity  # Adjust this threshold based on your privacy requirements
-    if max_noise > privacy_threshold:
-        scale_factor = privacy_threshold / max_noise
-        noise *= scale_factor
+  # Rescale the noise to meet the privacy requirements
+  max_noise = np.max(np.abs(noise))
+  privacy_threshold = sensitivity  # Adjust this threshold based on your privacy requirements
+  if max_noise > privacy_threshold:
+    scale_factor = privacy_threshold / max_noise
+    noise *= scale_factor
 
-    differentially_private_data = data + noise
+  differentially_private_data = data + noise
 
-    # Check if L1 sensitivity is preserved
-    max_sensitivity_difference = np.max(np.abs(differentially_private_data - data))
-    assert max_sensitivity_difference <= privacy_threshold, "Privacy requirements not met"
+  # Check if L1 sensitivity is preserved
+  max_sensitivity_difference = np.max(np.abs(differentially_private_data - data))
+  assert max_sensitivity_difference <= privacy_threshold, "Privacy requirements not met"
 
-    return differentially_private_data
+  return differentially_private_data
 
 
 def reconstruct_ratings(differentially_private_data):
@@ -520,6 +569,16 @@ def recommend_items(model, user_id):
   return max_rating
 
 
+def display_error_message(message):
+    """
+    Displays an error message to the user without revealing sensitive details.
+
+    Parameters:
+        message (str): The error message to be displayed.
+    """
+    print("An error occurred. Please contact the administrator for assistance.")
+
+
 def main():
   """
   Main function to create a simple GUI, read data from an Excel file, and perform item recommendation.
@@ -589,41 +648,45 @@ def browse_file():
   global data
   file_path = filedialog.askopenfilename()
   if file_path:
-    try:
-      user_id = 5
-      # Read the data from the Excel file using pandas.
-      df = pd.read_excel(file_path)
-      # data = df.to_numpy(dtype=np.float32)
+    if is_valid_excel_file(file_path):
+      try:
+        user_id = 5
+        # Read the data from the Excel file using pandas.
+        df = pd.read_excel(file_path)
+        # data = df.to_numpy(dtype=np.float32)
 
-      user_item_grouped = df.groupby(['user_id', 'item_id'], as_index=False).mean()
+        user_item_grouped = df.groupby(['user_id', 'item_id'], as_index=False).mean()
 
-      # Create a user-item matrix to represent interactions.
-      user_item_matrix = user_item_grouped.pivot(index='user_id', columns='item_id', values='rating')
-      user_item_matrix.fillna(0, inplace=True)
-      data = user_item_matrix.to_numpy(dtype=np.float32)
-      print(data)
+        # Create a user-item matrix to represent interactions.
+        user_item_matrix = user_item_grouped.pivot(index='user_id', columns='item_id', values='rating')
+        user_item_matrix.fillna(0, inplace=True)
+        data = user_item_matrix.to_numpy(dtype=np.float32)
+        print(data)
 
-      # Assuming 'encrypt_data' is the function that performs encryption
-      encrypted_data = encrypt_data(data)
+        # Assuming 'encrypt_data' is the function that performs encryption
+        encrypted_data = encrypt_data(data)
 
-      # Generate shares of the data.
-      shares = generate_shares(encrypted_data, threshold=7)
+        # Generate shares of the data.
+        shares = generate_shares(encrypted_data, threshold=7)
 
-      # Apply differential privacy to the data.
-      differentially_private_data = apply_differential_privacy(shares, epsilon=0.1)
+        # Apply differential privacy to the data.
+        differentially_private_data = apply_differential_privacy(shares, epsilon=0.1)
 
-      # Train the model.
-      model = train_model(differentially_private_data)
+        # Train the model.
+        model = train_model(differentially_private_data)
 
-      # Recommend items to a user.
-      recommended_items = recommend_items(model, user_id)
+        # Recommend items to a user.
+        recommended_items = recommend_items(model, user_id)
 
-      # Print the recommended items.
-      print("Recommended items for user", user_id, ":", recommended_items)
-    except Exception as e:
-      # Handle the exception, show an error message, or log the error.
-      print("Error loading file:", e)
-
+        # Print the recommended items.
+        print("Recommended items for user", user_id, ":", recommended_items)
+      except Exception as e:
+        # Handle the exception, show an error message, or log the error.
+        print("Error loading file:", e)
+      except CustomError:
+             display_error_message("An error occurred while processing the file.")
+      except Exception:
+             display_error_message("An unexpected error occurred. Please contact the administrator for assistance.")
 
 if __name__ == "__main__":
   """
