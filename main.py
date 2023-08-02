@@ -5,8 +5,7 @@ import random
 import secrets
 import pandas as pd
 from tkinter import Entry, Button, filedialog, Tk
-
-from openpyxl.reader.excel import load_workbook
+import hmac
 from sklearn.utils.extmath import randomized_svd
 
 
@@ -181,7 +180,10 @@ def generate_numeric_key(hash_value):
   # Perform additional mathematical operations to derive a numeric key.
   key = decimal_hash ** 2 - 3 * decimal_hash + 7
 
-  return key
+  enhanced_key = key ^ 0xABCDEFAA11223344
+
+  return enhanced_key
+
 
 class CustomError(Exception):
     """Custom exception class for better error handling and reporting."""
@@ -390,12 +392,11 @@ def apply_differential_privacy(data, epsilon):
   shape = data.shape
   noise = np.random.laplace(loc=0, scale=sensitivity, size=shape)
 
-  # Rescale the noise to meet the privacy requirements
+  # Rescale the noise to meet the privacy requirements more accurately
   max_noise = np.max(np.abs(noise))
-  privacy_threshold = sensitivity  # Adjust this threshold based on your privacy requirements
-  if max_noise > privacy_threshold:
-    scale_factor = privacy_threshold / max_noise
-    noise *= scale_factor
+  privacy_threshold = sensitivity
+  scale_factor = min(1.0, privacy_threshold / max_noise)
+  noise *= scale_factor
 
   differentially_private_data = data + noise
 
