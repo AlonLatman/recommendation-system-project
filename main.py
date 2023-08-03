@@ -1,48 +1,110 @@
 import hashlib
+import json
+import pickle
 import string
+import time
+
 import numpy as np
 import random
 import secrets
 import pandas as pd
 from tkinter import Entry, Button, filedialog, Tk
 from sklearn.utils.extmath import randomized_svd
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import padding as sym_padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from secrets import token_bytes
+import os
 
 
-def encrypt_data(data):
-  """
-  Encrypts the data using a complex encryption algorithm.
+def encrypt_data(data, participant_id):
+  # Convert participant's ID to bytes
+  participant_id_bytes = str(participant_id).encode('utf-8')
 
-  Parameters:
-      data (numpy.ndarray or list): The input data to be encrypted. It can be a 1D array, a 2D array, or a list.
+  # Generate encryption key using PBKDF2HMAC
+  kdf = PBKDF2HMAC(
+    algorithm=hashes.SHA256(),
+    iterations=100000,
+    salt=os.urandom(16),
+    length=32,
+    backend=default_backend()
+  )
 
-  Returns:
-      numpy.ndarray: The encrypted data as a 2D numpy array.
+  key = kdf.derive(participant_id_bytes)
 
-  Notes:
-      This function takes the input data and applies a series of encryption transformations to it using a randomly
-      generated encryption key. The key is generated using the function 'generate_encryption_key()' and is used to
-      ensure that the encryption is secure.
+  # Initialize AES cipher with the derived key and a random IV
+  iv = os.urandom(16)
+  cipher = Cipher(algorithms.AES(key), modes.CFB(iv), backend=default_backend())
+  encryptor = cipher.encryptor()
 
-      If the input data is a 1D array or a list, it will be reshaped into a 2D array with one row.
+  # Encrypt data
+  padding_data = sym_padding.PKCS7(128).padder()
+  padded_data = padding_data.update(data) + padding_data.finalize()
+  encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
 
-      The actual encryption transformations are performed by the function 'apply_encryption_transformations()',
-      which takes the data and the encryption key as input arguments and returns the encrypted data.
+  return iv + encrypted_data
 
-  Example:
-      >>> data = np.array([[1, 2, 3], [4, 5, 6]])
-      >>> encrypt_data(data)
-      array([[10, 25, 30], [40, 55, 60]])
-  """
-  if len(data.shape) == 1:
-    data = data.reshape((1, len(data)))
 
-  # Generate a random encryption key.
-  key = generate_encryption_key()
+def decrypt_data(encrypted_data, participant_id):
+  # Convert participant's ID to bytes
+  participant_id_bytes = str(participant_id).encode('utf-8')
 
-  # Apply multiple encryption transformations to the data using the key.
-  encrypted_data = apply_encryption_transformations(data, key)
+  # Generate decryption key using PBKDF2HMAC
+  kdf = PBKDF2HMAC(
+    algorithm=hashes.SHA256(),
+    iterations=100000,
+    salt=os.urandom(16),
+    length=32,
+    backend=default_backend()
+  )
 
-  return encrypted_data
+  key = kdf.derive(participant_id_bytes)
+
+  # Extract IV from the encrypted data
+  iv = encrypted_data[:16]
+  encrypted_payload = encrypted_data[16:]
+
+  # Initialize AES cipher with the derived key and IV using CBC mode
+  cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+  decryptor = cipher.decryptor()
+
+  # Decrypt and remove padding
+  decrypted_data = decryptor.update(encrypted_payload) + decryptor.finalize()
+  unpadder = sym_padding.PKCS7(128).unpadder()
+  unpadded_data = unpadder.update(decrypted_data) + unpadder.finalize()
+
+  return unpadded_data
+
+
+def generate_synthetic_data(participant_count, items_per_participant):
+  data = []
+
+  for participant_id in range(1, participant_count + 1):
+    participant_data = []
+    for item_id in range(1, items_per_participant + 1):
+      user_id = random.randint(1000, 9999)  # Generate random user ID
+      rating = random.randint(1, 5)  # Generate random rating
+
+      participant_data.append({'User_ID': user_id, 'Item_ID': item_id, 'Rating': rating})
+
+    data.extend(participant_data)
+
+    # Create a separate Excel file for each participant
+    participant_df = pd.DataFrame(participant_data)
+    excel_filename = f'participant_{participant_id}_data.xlsx'
+    participant_df.to_excel(excel_filename, index=False)
+    print(f'Synthetic data for Participant {participant_id} saved to {excel_filename}')
+
+  # Create a combined Excel file for all participants
+  combined_df = pd.DataFrame(data)
+  combined_excel_filename = 'combined_participant_data.xlsx'
+  combined_df.to_excel(combined_excel_filename, index=False)
+  print(f'Combined synthetic data for all participants saved to {combined_excel_filename}')
 
 
 def generate_encryption_key():
@@ -189,11 +251,11 @@ def generate_numeric_key(hash_value):
 
 
 class CustomError(Exception):
-    """Custom exception class for better error handling and reporting."""
+  """Custom exception class for better error handling and reporting."""
 
-    def __init__(self, message, error_code=None):
-      super().__init__(message)
-      self.error_code = error_code
+  def __init__(self, message, error_code=None):
+    super().__init__(message)
+    self.error_code = error_code
 
 
 def is_valid_excel_file(file_path):
@@ -315,42 +377,79 @@ def generate_random_matrix(shape):
   return random_matrix
 
 
-def generate_shares(data, threshold):
-  """
-  Generates shares of the data by repeating the input data.
+def generate_shares(encrypted_data, num_participants):
+    # Generate random secret keys for each participant
+    secret_keys = [token_bytes(32) for _ in range(num_participants)]
 
-  Parameters:
-      data (any): The data to be secret shared. This data will be repeated to create shares.
-      threshold (int): The number of shares required to reconstruct the original data.
+    # Initialize a list to hold shares for each participant
+    shares_by_participant = [[] for _ in range(num_participants)]
 
-  Returns:
-      numpy.ndarray: A 2D numpy array containing the generated shares.
 
-  Notes:
-      This function does not use any secret sharing algorithm but simply creates shares by repeating the input data.
+    # Split the encrypted data into shares
+    for byte in encrypted_data:
+      byte_shares = secret_to_shares(byte, num_participants)
+      for participant, share in enumerate(byte_shares):
+        shares_by_participant[participant].append(share)
 
-      The function first creates a 1D Python list called 'shares' containing 'threshold' repetitions of the input data.
+    # Secure aggregation: Combine shares using the Secure Sum protocol
+    print("hello")
+    start_time = time.time()
+    max_num_shares = max(len(participant_shares) for participant_shares in shares_by_participant)
 
-      Then, the shares list is converted to a 2D NumPy array of dtype 'float64' using 'np.array(shares, dtype=np.float64)'.
+    # Pad the shares of participants with fewer shares
+    for participant_shares in shares_by_participant:
+      while len(participant_shares) < max_num_shares:
+        participant_shares.append(0)
 
-      The resulting shares are reshaped into a 2D NumPy array with 'threshold' rows and one or more columns, based on
-      the length of the original 1D array.
 
-      The generated shares are returned as a 2D numpy array.
+    # Perform the aggregation
+    shares_array = np.array(shares_by_participant)
+    aggregated_shares = np.sum(shares_array, axis=0)
+    end_time = time.time()  # Stop measuring time
+    elapsed_time = end_time - start_time
+    print("Time taken for loop:", elapsed_time, "seconds")
 
-  Example:
-      >>> data = 42
-      >>> threshold = 3
-      >>> generate_shares(data, threshold)
-      array([[42., 42., 42.]])
-  """
-  # Create a 1D Python list containing 'threshold' repetitions of the input data.
-  shares = [data] * threshold
+    # Serialize secret keys, aggregated shares, and other participant data
+    print("hello2")
+    serialized_data_list = []
+    for participant in range(num_participants):
+      participant_data = {
+        'secret_key': secret_keys[participant],
+        'aggregated_shares': aggregated_shares,
+        'other_participant_data': serialize_other_participant_data(participant, shares_by_participant)
+      }
+      serialized_data = serialize_data(participant_data)
+      serialized_data_list.append(serialized_data)
+    print("bye")
+    return serialized_data_list
 
-  # Convert the shares to a NumPy array with dtype 'float64'.
-  shares_2d = np.array(shares, dtype=np.float64).reshape(threshold, -1)
 
-  return shares_2d
+def secret_to_shares(secret, num_shares):
+  coefficients = [secret] + [random.randint(0, 255) for _ in range(num_shares - 1)]
+  shares = [(i, evaluate_polynomial(coefficients, i)) for i in range(1, num_shares + 1)]
+  return shares
+
+
+def evaluate_polynomial(coefficients, x):
+  result = 0
+  power = 1
+  for coefficient in coefficients:
+    result += coefficient * power
+    power *= x
+  return result
+
+
+def serialize_data(data):
+  serialization = pickle.dumps(data)
+  return serialization
+
+
+def serialize_other_participant_data(participant, shares_by_participant):
+  serialized_other_participant_data = []
+  for p, shares in enumerate(shares_by_participant):
+    if p != participant:
+      serialized_other_participant_data.append(serialize_data({'participant': p, 'shares': shares}))
+  return serialized_other_participant_data
 
 
 def apply_differential_privacy(data, epsilon):
@@ -464,118 +563,158 @@ def reconstruct_ratings(differentially_private_data):
   return reconstructed_data
 
 
-def train_model(shares, k=50, epsilon=0.1):
-  """
-  Trains the matrix factorization model on the given shares.
+# def train_model(shares, k=50, epsilon=0.1):
+#   """
+#   Trains the matrix factorization model on the given shares.
+#
+#   Parameters:
+#       shares (numpy.ndarray): The shares of the data on which the model will be trained. It should be a numpy array.
+#       k (int): Optional. The number of latent factors. Default is 50.
+#       epsilon (float): Optional. The privacy budget for differential privacy. Default is 0.1.
+#
+#   Returns:
+#       numpy.ndarray: The reconstructed ratings as a numpy array.
+#
+#   Notes:
+#       This function trains a matrix factorization model on the input shares of the data. The matrix factorization
+#       model is trained using Singular Value Decomposition (SVD) to factorize the given shares into low-rank matrices.
+#
+#       The training process includes the application of differential privacy to the shares using the function
+#       'apply_differential_privacy()'. This ensures that the training process maintains the privacy of individual
+#       data points.
+#
+#       The 'epsilon' parameter in 'apply_differential_privacy()' represents the privacy budget and determines the
+#       strength of the privacy guarantee during the training process.
+#
+#       The number of latent factors 'k' is a hyperparameter that controls the number of dimensions used in the
+#       factorization. A smaller 'k' provides a more compact representation of the data but may result in a loss of
+#       detail, while a larger 'k' captures more details at the cost of higher dimensionality.
+#
+#       The matrix factorization model is trained by factorizing the data using the first 'k' components obtained from
+#       SVD, i.e., 'U[:, :k]', 'np.diag(sigma[:k])', and 'Vt[:k, :]'. The reconstructed ratings are obtained by taking
+#       the dot product of these low-rank matrices.
+#
+#       The reconstructed ratings are returned as a numpy array.
+#
+#   Example:
+#       >>> shares = np.array([[15839., 16352., 15992.],
+#                             [16486., 17762., 18291.],
+#                             [17731., 19439., 19911.]])
+#       >>> train_model(shares)
+#       array([[ 1.64781335,  2.18108242,  2.78087762],
+#              [ 4.22627881, -2.00924563,  3.04390574],
+#              [ 3.02912346,  4.74316945,  5.42374003]])
+#   """
+#   differentially_private_data = apply_differential_privacy(shares, epsilon=epsilon)
+#
+#   # Use randomized SVD for deterministic factorization
+#   U, sigma, Vt = randomized_svd(differentially_private_data, n_components=k)
+#
+#   # Factorize the data using the first k components.
+#   U_k = U
+#   sigma_k = np.diag(sigma)
+#   Vt_k = Vt
+#   reconstructed_ratings = np.dot(U_k, np.dot(sigma_k, Vt_k))
+#
+#   return reconstructed_ratings
 
-  Parameters:
-      shares (numpy.ndarray): The shares of the data on which the model will be trained. It should be a numpy array.
-      k (int): Optional. The number of latent factors. Default is 50.
-      epsilon (float): Optional. The privacy budget for differential privacy. Default is 0.1.
+def train_model(participant_data, num_epochs, learning_rate):
+    participant_data = decrypt_data(participant_data,participant_id=2)
+    print(participant_data)
+    # Initialize model parameters
+    num_features = len(participant_data[0]['input_features'])
+    model_weights = np.random.rand(num_features)
 
-  Returns:
-      numpy.ndarray: The reconstructed ratings as a numpy array.
+    for epoch in range(num_epochs):
+      aggregated_gradients = np.zeros(num_features)
 
-  Notes:
-      This function trains a matrix factorization model on the input shares of the data. The matrix factorization
-      model is trained using Singular Value Decomposition (SVD) to factorize the given shares into low-rank matrices.
+      for participant_data in participant_data:
+        encrypted_gradients = compute_encrypted_gradients(participant_data, model_weights)
+        aggregated_gradients += encrypted_gradients
 
-      The training process includes the application of differential privacy to the shares using the function
-      'apply_differential_privacy()'. This ensures that the training process maintains the privacy of individual
-      data points.
+      # Securely aggregate the encrypted gradients
+      securely_aggregated_gradients = secure_aggregation(aggregated_gradients, len(participant_data))
 
-      The 'epsilon' parameter in 'apply_differential_privacy()' represents the privacy budget and determines the
-      strength of the privacy guarantee during the training process.
+      # Update model weights using the aggregated gradients
+      model_weights -= learning_rate * securely_aggregated_gradients
 
-      The number of latent factors 'k' is a hyperparameter that controls the number of dimensions used in the
-      factorization. A smaller 'k' provides a more compact representation of the data but may result in a loss of
-      detail, while a larger 'k' captures more details at the cost of higher dimensionality.
-
-      The matrix factorization model is trained by factorizing the data using the first 'k' components obtained from
-      SVD, i.e., 'U[:, :k]', 'np.diag(sigma[:k])', and 'Vt[:k, :]'. The reconstructed ratings are obtained by taking
-      the dot product of these low-rank matrices.
-
-      The reconstructed ratings are returned as a numpy array.
-
-  Example:
-      >>> shares = np.array([[15839., 16352., 15992.],
-                            [16486., 17762., 18291.],
-                            [17731., 19439., 19911.]])
-      >>> train_model(shares)
-      array([[ 1.64781335,  2.18108242,  2.78087762],
-             [ 4.22627881, -2.00924563,  3.04390574],
-             [ 3.02912346,  4.74316945,  5.42374003]])
-  """
-  differentially_private_data = apply_differential_privacy(shares, epsilon=epsilon)
-
-  # Use randomized SVD for deterministic factorization
-  U, sigma, Vt = randomized_svd(differentially_private_data, n_components=k)
-
-  # Factorize the data using the first k components.
-  U_k = U
-  sigma_k = np.diag(sigma)
-  Vt_k = Vt
-  reconstructed_ratings = np.dot(U_k, np.dot(sigma_k, Vt_k))
-
-  return reconstructed_ratings
+    return model_weights
 
 
-def recommend_items(model, user_id):
-  """
-  Recommends items to the user based on the model's predictions.
+def compute_encrypted_gradients(participant_data, model_weights):
+  # Decrypt the participant's shares using their secret key
+  decrypted_shares = decrypt_shares(participant_data['aggregated_shares'], participant_data['secret_key'])
 
-  Parameters:
-      model (numpy.ndarray): The model's predictions, which are assumed to be user-item ratings in a 2D numpy array.
-                             Rows represent users, and columns represent items.
-      user_id (int): The ID of the user for whom item recommendations will be generated.
+  # Compute gradients on the decrypted data
+  gradients = compute_gradients(decrypted_shares, model_weights)
 
-  Returns:
-      float: The maximum rating among the recommended items for the specified user.
+  # Encrypt the gradients using the participant's public key
+  encrypted_gradients = encrypt_gradients(gradients, participant_data['public_key'])
 
-  Notes:
-      This function recommends items to a specific user based on the model's predictions. The 'model' parameter is
-      assumed to be a 2D numpy array where rows represent users, and columns represent items. The values in the array
-      are assumed to be user-item ratings, and the function assumes that the 'user_id' corresponds to a specific row
-      in the 'model'.
+  return encrypted_gradients
 
-      The function first flattens the 2D array 'model' to a 1D array called 'user_ratings', which contains the
-      predicted ratings for all items for the specified user.
 
-      The 'user_ratings' array is then sorted in descending order to find the top-rated items for the user.
+def decrypt_shares(aggregated_shares, secret_key):
+  # Decryption process using the secret key
+  decrypted_shares = [share ^ secret_key for share in aggregated_shares]
+  return decrypted_shares
 
-      The maximum rating among the top-rated items is returned as a float, which represents the highest predicted
-      rating for the specified user.
 
-  Example:
-      >>> model = np.array([[5, 4, 3],[2, 1, 5]])
-      >>> user_id = 1
-      >>> recommend_items(model, user_id)
-      5.0
-  """
-  if not isinstance(model, np.ndarray) or model.ndim != 2:
-    raise ValueError("Invalid model shape. The model should be a 2D NumPy array.")
-  if not isinstance(user_id, int) or user_id < 0 or user_id >= model.shape[0]:
-    raise ValueError("Invalid user_id. It should be a non-negative integer within the range of users.")
+def compute_gradients(decrypted_shares, model_weights):
+  # Example: Compute gradients using decrypted shares and model weights
+  gradients = np.array([share * feature for share, feature in zip(decrypted_shares, model_weights)])
+  return gradients
 
-  user_ratings = model
-  # Flatten the 2D array to 1D.
-  user_ratings = user_ratings.flatten()
 
-  # Find the top-rated items.
-  top_rated_items = np.sort(user_ratings)[::-1]
-  max_rating = np.max(top_rated_items)
+def encrypt_gradients(gradients, public_key):
+  # Encryption process using the participant's public key
+  encrypted_gradients = [gradient ^ public_key for gradient in gradients]
+  return encrypted_gradients
 
-  return max_rating
+
+def secure_aggregation(aggregated_gradients, num_participants):
+  # Secure aggregation process (e.g., using Secure Sum)
+  securely_aggregated_gradients = aggregated_gradients / num_participants
+  return securely_aggregated_gradients
+
+
+def recommend_items(trained_model_weights, participant_data_list):
+    recommended_items = []
+
+    for participant_data in participant_data_list:
+      encrypted_model_weights = encrypt_model_weights(trained_model_weights, participant_data['public_key'])
+      encrypted_scores = compute_encrypted_scores(encrypted_model_weights, participant_data['encrypted_features'])
+      decrypted_scores = decrypt_scores(encrypted_scores, participant_data['secret_key'])
+
+      recommended_item = np.argmax(decrypted_scores)  # Recommend the item with the highest score
+      recommended_items.append(recommended_item)
+
+    return recommended_items
+
+
+def encrypt_model_weights(model_weights, public_key):
+  encrypted_model_weights = [weight ^ public_key for weight in model_weights]
+  return encrypted_model_weights
+
+
+def compute_encrypted_scores(encrypted_model_weights, encrypted_features):
+  encrypted_scores = [weight ^ feature for weight, feature in zip(encrypted_model_weights, encrypted_features)]
+  return encrypted_scores
+
+
+def decrypt_scores(encrypted_scores, secret_key):
+  decrypted_scores = [score ^ secret_key for score in encrypted_scores]
+  return decrypted_scores
 
 
 def display_error_message(message):
-    """
-    Displays an error message to the user without revealing sensitive details.
+  """
+  Displays an error message to the user without revealing sensitive details.
 
-    Parameters:
-        message (str): The error message to be displayed.
-    """
-    print("An error occurred. Please contact the administrator for assistance.")
+  Parameters:
+      message (str): The error message to be displayed.
+  """
+  print("An error occurred. Please contact the administrator for assistance.")
 
 
 def main():
@@ -644,48 +783,41 @@ def browse_file():
        The 'browse_file' function is triggered when the 'Browse' button is clicked. It allows users to select an Excel file
        containing user-item ratings data. The function then performs item recommendation for the specified user ID (user_id=5).
    """
-  global data
-  file_path = filedialog.askopenfilename()
-  if file_path:
+generate_synthetic_data(participant_count=3, items_per_participant=5)
+global data
+file_path = filedialog.askopenfilename()
+if file_path:
+  try:
     if is_valid_excel_file(file_path):
-      try:
-        user_id = 5
-        # Read the data from the Excel file using pandas.
-        df = pd.read_excel(file_path)
-        # data = df.to_numpy(dtype=np.float32)
+      df = pd.read_excel(file_path)
 
-        user_item_grouped = df.groupby(['user_id', 'item_id'], as_index=False).mean()
+      # Process the data and create a user-item matrix
+      user_item_grouped = df.groupby(['User_ID', 'Item_ID'], as_index=False).mean()
+      user_item_matrix = user_item_grouped.pivot(index='User_ID', columns='Item_ID', values='Rating')
+      user_item_matrix.fillna(0, inplace=True)
+      data = user_item_matrix.to_numpy(dtype=np.float32)
 
-        # Create a user-item matrix to represent interactions.
-        user_item_matrix = user_item_grouped.pivot(index='user_id', columns='item_id', values='rating')
-        user_item_matrix.fillna(0, inplace=True)
-        data = user_item_matrix.to_numpy(dtype=np.float32)
-        print(data)
+      # Encrypt the data
+      encrypted_data = encrypt_data(data, participant_id=2)
 
-        # Assuming 'encrypt_data' is the function that performs encryption
-        encrypted_data = encrypt_data(data)
+      # Generate shares of the encrypted data
+      participant_data_list = generate_shares(encrypted_data, num_participants=3)
 
-        # Generate shares of the data.
-        shares = generate_shares(encrypted_data, threshold=7)
+      # participant_data_list = np.array(participant_data_list)
 
-        # Apply differential privacy to the data.
-        differentially_private_data = apply_differential_privacy(shares, epsilon=0.1)
+      # Train the model using the shares
+      trained_model_weights = train_model(participant_data_list, num_epochs=20, learning_rate=0.1)
 
-        # Train the model.
-        model = train_model(differentially_private_data)
+      # Recommend items to a user
+      recommended_items = recommend_items(trained_model_weights, participant_data_list)
 
-        # Recommend items to a user.
-        recommended_items = recommend_items(model, user_id)
+      # Print the recommended items
+      print("Recommended items for user 5:", recommended_items)
 
-        # Print the recommended items.
-        print("Recommended items for user", user_id, ":", recommended_items)
-      except CustomError:
-             display_error_message("An error occurred while processing the file.")
-      except Exception as e:
-        # Handle the exception, show an error message, or log the error.
-        print("Error loading file:", e)
-      except Exception:
-             display_error_message("An unexpected error occurred. Please contact the administrator for assistance.")
+  except CustomError as custom_error:
+    display_error_message("An error occurred: " + str(custom_error))
+  except Exception as e:
+    display_error_message("An unexpected error occurred: " + str(e))
 
 if __name__ == "__main__":
   """
