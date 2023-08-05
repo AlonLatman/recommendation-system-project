@@ -1,3 +1,4 @@
+import logging
 import random
 import pandas as pd
 import numpy as np
@@ -150,9 +151,22 @@ def load_data_from_excel(file_path):
 
 def encrypt_vector(vector, context):
     """Encrypt a vector using the CKKS scheme."""
-    encrypted_vector = ts.ckks_vector(context, vector)
-    return encrypted_vector
+    try:
+        # Check if vector is a list and not empty
+        if not isinstance(vector, list) or len(vector) == 0:
+            raise ValueError("Vector must be a non-empty list.")
 
+        # Log the beginning of the encryption process
+        logging.info("Starting encryption process...")
+
+        encrypted_vector = ts.ckks_vector(context, vector)
+        # Log the end of the encryption process
+        logging.info("Encryption process completed successfully.")
+
+        return encrypted_vector
+    except Exception as e:
+        logging.error(f"An error occurred during the encryption process: {e}")
+        raise
 
 def decrypt_vector(encrypted_vector):
     """Decrypt a vector encrypted with the CKKS scheme."""
