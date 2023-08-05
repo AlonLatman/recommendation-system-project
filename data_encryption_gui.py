@@ -1,3 +1,4 @@
+import os
 import random
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
@@ -6,6 +7,7 @@ import pandas as pd
 import tenseal as ts
 from main import create_user_vectors, generate_synthetic_data, encrypt_vector, calculate_similarities, \
     find_similar_users, recommend_items
+import webbrowser
 
 
 lab_report = '''
@@ -43,6 +45,16 @@ optimizing the system's performance and evaluating the quality of recommendation
 def show_lab_report():
     messagebox.showinfo("Lab Report", lab_report)
 
+def open_webpage():
+    webbrowser.open('https://he.wikipedia.org/wiki/CKKS')
+
+def open_webpage2():
+    webbrowser.open('https://en.wikipedia.org/wiki/Recommender_system')
+
+
+def open_webpage3():
+    webbrowser.open('https://en.wikipedia.org/wiki/Recommender_system')
+
 
 def generate_synthetic_data_gui():
     # Get the number of participants and items per participant from the input fields
@@ -61,6 +73,7 @@ def generate_synthetic_data_gui():
         return
 
     messagebox.showinfo("Success", "Synthetic data generated successfully.")
+
 
 def load_data_and_recommend_items():
     # Open a file dialog for the user to select the Excel file
@@ -114,6 +127,7 @@ def load_data_and_recommend_items():
 window = tk.Tk()
 window.title('Privacy-Preserving Item Recommendation System')
 
+
 # Create a frame for the synthetic data generation controls
 synthetic_data_frame = ttk.Frame(window, padding='3 3 12 12')
 synthetic_data_frame.grid(column=0, row=0, sticky=(tk.W, tk.E))
@@ -153,6 +167,34 @@ show_report_button = ttk.Button(lab_report_frame, text='Show Lab Report', comman
 
 # Position the control in the grid
 show_report_button.grid(column=0, row=0)
+
+# Create a new frame for the button
+button_frame = ttk.Frame(window, padding='3 3 12 12')
+button_frame.grid(column=0, row=3, sticky=(tk.W, tk.E))
+
+# Create a button for opening the Wikipedia page
+open_webpage_button = ttk.Button(button_frame, text='Open CKKS Wikipedia Page', command=open_webpage)
+
+# Position the button in the grid
+open_webpage_button.grid(column=0, row=0)
+
+button_frame = ttk.Frame(window, padding='3 3 12 12')
+button_frame.grid(column=0, row=4, sticky=(tk.W, tk.E))
+
+# Create a button for opening the Wikipedia page
+open_webpage_button = ttk.Button(button_frame, text='Open Recommendation System Wikipedia Page', command=open_webpage2)
+
+# Position the button in the grid
+open_webpage_button.grid(column=0, row=0)
+
+button_frame = ttk.Frame(window, padding='3 3 12 12')
+button_frame.grid(column=0, row=5, sticky=(tk.W, tk.E))
+
+# Create a button for opening the Wikipedia page
+open_webpage_button = ttk.Button(button_frame, text='Open Cosine similarity Wikipedia Page', command=open_webpage3)
+
+# Position the button in the grid
+open_webpage_button.grid(column=0, row=0)
 
 # Start the event loop
 window.mainloop()
