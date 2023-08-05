@@ -93,16 +93,30 @@ def calculate_similarities(user_id, encrypted_vectors, norms):
     calculate_similarities(0, encrypted_vectors, norms) will return a list of similarity scores between the user at
     index 0 and all other users, based on their encrypted vectors and norms.
     """
-    # Get the encrypted vector and norm for the given user
+    if not isinstance(user_id, int) or user_id < 0 or user_id >= len(encrypted_vectors) or user_id >= len(norms):
+        raise ValueError(
+            f"user_id should be a non-negative integer less than the length of encrypted_vectors and norms. Got: {user_id}")
+
+    if not isinstance(encrypted_vectors, list) or len(encrypted_vectors) == 0:
+        raise ValueError("encrypted_vectors should be a non-empty list.")
+
+    if not isinstance(norms, list) or len(norms) == 0 or len(norms) != len(encrypted_vectors):
+        raise ValueError("norms should be a non-empty list with the same length as encrypted_vectors.")
+
+    # Continue with the original function logic
     encrypted_vector1 = encrypted_vectors[user_id]
     norm1 = norms[user_id]
 
-    # Calculate the similarity between the given user's vector and each user vector
     similarities = []
     for i, encrypted_vector2 in enumerate(encrypted_vectors):
         norm2 = norms[i]
-        similarity = cosine_similarity(encrypted_vector1, encrypted_vector2, norm1, norm2)
-        similarities.append(similarity)
+        try:
+            similarity = cosine_similarity(encrypted_vector1, encrypted_vector2, norm1, norm2)
+            similarities.append(similarity)
+        except Exception as e:
+            # Handle any potential errors arising from the cosine_similarity function
+            print(f"Error calculating similarity for user ID {i}. Error: {e}")
+            similarities.append(0)  # Default to 0 similarity for error cases
 
     return similarities
 
@@ -125,14 +139,21 @@ def find_similar_users(user_id, similarities, n=10):
     find_similar_users(0, [0.1, 0.3, 0.2]) will return [1, 2], which are the indices of the users most similar to the
     user at index 0.
     """
-    # Create a list of user IDs and their corresponding similarities
+
+    if not isinstance(user_id, int) or user_id < 0 or user_id >= len(similarities):
+        raise ValueError(
+            f"user_id should be a non-negative integer less than the length of similarities. Got: {user_id}")
+
+    if not isinstance(similarities, list) or len(similarities) == 0:
+        raise ValueError("similarities should be a non-empty list.")
+
+    if not (isinstance(n, int) and 0 < n <= len(similarities)):
+        raise ValueError(f"n should be a positive integer not exceeding the length of similarities. Got: {n}")
+
+    # Continue with the original function logic
     user_similarities = list(enumerate(similarities))
-
-    # Sort the list by similarity in descending order
     user_similarities.sort(key=lambda x: x[1], reverse=True)
-
-    # Get the user IDs of the most similar users
-    similar_users = [user_id for user_id, similarity in user_similarities[:n]]
+    similar_users = [user_idx for user_idx, similarity in user_similarities[:n]]
 
     return similar_users
 
@@ -170,7 +191,9 @@ def encrypt_vector(vector, context):
 
 def decrypt_vector(encrypted_vector):
     """Decrypt a vector encrypted with the CKKS scheme."""
+    logging.info("Starting decryption process...")
     decrypted_vector = encrypted_vector.decrypt()
+    logging.info("Decryption process completed successfully.")
     return decrypted_vector
 
 
@@ -194,42 +217,44 @@ def recommend_items(user_index, similar_users_indices, data, n=10):
     recommend_items(0, [1, 2, 3], data) will find the top 10 items to recommend to the user at index 0, based on the
     ratings of the users at indices 1, 2, and 3.
     """
-    # Get the User_ID of the given user
-    user_id = data['User_ID'].unique()[user_index]
+    if not {'User_ID', 'Item_ID', 'Rating'}.issubset(data.columns):
+        raise ValueError("The data DataFrame must contain 'User_ID', 'Item_ID', and 'Rating' columns.")
 
-    # Get the items that the given user has already rated
+    unique_users = data['User_ID'].unique()
+
+    if user_index < 0 or user_index >= len(unique_users):
+        raise IndexError("Invalid user_index. It's out of the range of unique users in the data.")
+
+    for idx in similar_users_indices:
+        if idx < 0 or idx >= len(unique_users):
+            raise IndexError(
+                f"Invalid index {idx} in similar_users_indices. It's out of the range of unique users in the data.")
+
+    if not (isinstance(n, int) and n > 0):
+        raise ValueError("n should be a positive integer.")
+
+    ratings = data['Rating']
+    if not all(1 <= rating <= 5 for rating in ratings):
+        raise ValueError("All ratings should be between 1 and 5.")
+
+    # Continue with the original function logic
+    user_id = unique_users[user_index]
     user_items = set(data[data['User_ID'] == user_id]['Item_ID'])
-
-    # Create a dictionary to count the recommendations for each item
     recommendation_counts = {}
 
-    # For each similar user, find the items they have rated highly
     for similar_user_index in similar_users_indices:
-        # Get the User_ID of the similar user
-        similar_user_id = data['User_ID'].unique()[similar_user_index]
-
+        similar_user_id = unique_users[similar_user_index]
         similar_user_highly_rated_items = set(
             data[(data['User_ID'] == similar_user_id) & (data['Rating'] >= 4)]['Item_ID']
         )
-
-        # Subtract the items that the given user has already rated
         recommended_items = similar_user_highly_rated_items - user_items
-
-        # Add the recommended items to the recommendation counts
         for item in recommended_items:
-            if item in recommendation_counts:
-                recommendation_counts[item] += 1
-            else:
-                recommendation_counts[item] = 1
+            recommendation_counts[item] = recommendation_counts.get(item, 0) + 1
 
-    # Sort the items by recommendation count in descending order
     recommended_items_sorted = sorted(recommendation_counts.items(), key=lambda x: x[1], reverse=True)
-
-    # Get the items with the highest recommendation counts
     top_recommended_items = [item for item, count in recommended_items_sorted[:n]]
 
     return top_recommended_items
-
 
 def sum_ratings(encrypted_data, private_key):
     # Calculate the sum of the ratings for each item
@@ -266,6 +291,12 @@ def generate_synthetic_data(participant_count: int, items_per_participant: int) 
     file (named as 'combined_participant_data.xlsx').
     """
 
+    if not (isinstance(participant_count, int) and participant_count > 0):
+        raise ValueError("participant_count should be a positive integer.")
+
+    if not (isinstance(items_per_participant, int) and items_per_participant > 0):
+        raise ValueError("items_per_participant should be a positive integer.")
+
     data = []
 
     for participant_id in range(1, participant_count + 1):
@@ -278,14 +309,22 @@ def generate_synthetic_data(participant_count: int, items_per_participant: int) 
 
         data.extend(participant_data)
 
-        # Create a separate Excel file for each participant
-        participant_df = pd.DataFrame(participant_data)
-        excel_filename = f'participant_{participant_id}_data.xlsx'
-        participant_df.to_excel(excel_filename, index=False)
-        print(f'Synthetic data for Participant {participant_id} saved to {excel_filename}')
+        # Handle potential file write errors
+        try:
+            # Create a separate Excel file for each participant
+            participant_df = pd.DataFrame(participant_data)
+            excel_filename = f'participant_{participant_id}_data.xlsx'
+            participant_df.to_excel(excel_filename, index=False)
+            print(f'Synthetic data for Participant {participant_id} saved to {excel_filename}')
+        except Exception as e:
+            print(f"Error saving synthetic data for Participant {participant_id}. Error: {e}")
 
-    # Create a combined Excel file for all participants
-    combined_df = pd.DataFrame(data)
-    combined_excel_filename = 'combined_participant_data.xlsx'
-    combined_df.to_excel(combined_excel_filename, index=False)
-    print(f'Combined synthetic data for all participants saved to {combined_excel_filename}')
+    # Handle potential file write errors for the combined file
+    try:
+        # Create a combined Excel file for all participants
+        combined_df = pd.DataFrame(data)
+        combined_excel_filename = 'combined_participant_data.xlsx'
+        combined_df.to_excel(combined_excel_filename, index=False)
+        print(f'Combined synthetic data for all participants saved to {combined_excel_filename}')
+    except Exception as e:
+        print(f"Error saving combined synthetic data. Error: {e}")
