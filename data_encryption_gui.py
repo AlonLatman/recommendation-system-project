@@ -1,6 +1,6 @@
 import random
 import tkinter as tk
-from tkinter import messagebox, filedialog
+from tkinter import messagebox, filedialog, ttk
 import numpy as np
 import pandas as pd
 import tenseal as ts
@@ -109,31 +109,50 @@ def load_data_and_recommend_items():
         messagebox.showerror("Error", str(e))
         return
 
+
 # Create a window
 window = tk.Tk()
+window.title('Privacy-Preserving Item Recommendation System')
+
+# Create a frame for the synthetic data generation controls
+synthetic_data_frame = ttk.Frame(window, padding='3 3 12 12')
+synthetic_data_frame.grid(column=0, row=0, sticky=(tk.W, tk.E))
 
 # Create labels and input fields for the number of participants and items per participant
-participants_label = tk.Label(window, text="Enter number of users:")
-participants_input = tk.Entry(window)
-items_label = tk.Label(window, text="Enter number of items:")
-items_input = tk.Entry(window)
-
-show_report_button = tk.Button(window, text="Show Lab Report", command=show_lab_report)
+participants_label = ttk.Label(synthetic_data_frame, text='Number of users:')
+participants_input = ttk.Entry(synthetic_data_frame)
+items_label = ttk.Label(synthetic_data_frame, text='Number of items per user:')
+items_input = ttk.Entry(synthetic_data_frame)
 
 # Create a button for generating synthetic data
-generate_button = tk.Button(window, text="Generate Synthetic Data", command=generate_synthetic_data_gui)
+generate_button = ttk.Button(synthetic_data_frame, text='Generate Synthetic Data', command=generate_synthetic_data_gui)
+
+# Position the controls in the grid
+participants_label.grid(column=0, row=0, sticky=tk.W)
+participants_input.grid(column=1, row=0, sticky=(tk.W, tk.E))
+items_label.grid(column=0, row=1, sticky=tk.W)
+items_input.grid(column=1, row=1, sticky=(tk.W, tk.E))
+generate_button.grid(column=0, row=2, columnspan=2)
+
+# Create a frame for the recommendation controls
+recommendation_frame = ttk.Frame(window, padding='3 3 12 12')
+recommendation_frame.grid(column=0, row=1, sticky=(tk.W, tk.E))
 
 # Create a button for loading data and recommending items
-recommend_button = tk.Button(window, text="Load Data and Recommend Items", command=load_data_and_recommend_items)
+recommend_button = ttk.Button(recommendation_frame, text='Load Data and Recommend Items', command=load_data_and_recommend_items)
 
-# Add the labels, input fields, and buttons to the window
-participants_label.pack()
-participants_input.pack()
-items_label.pack()
-items_input.pack()
-generate_button.pack()
-recommend_button.pack()
-show_report_button.pack()
+# Position the control in the grid
+recommend_button.grid(column=0, row=0)
+
+# Create a frame for the lab report control
+lab_report_frame = ttk.Frame(window, padding='3 3 12 12')
+lab_report_frame.grid(column=0, row=2, sticky=(tk.W, tk.E))
+
+# Create a button for showing the lab report
+show_report_button = ttk.Button(lab_report_frame, text='Show Lab Report', command=show_lab_report)
+
+# Position the control in the grid
+show_report_button.grid(column=0, row=0)
 
 # Start the event loop
 window.mainloop()

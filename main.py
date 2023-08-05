@@ -15,7 +15,22 @@ context.global_scale = 2**40
 
 
 def create_user_vectors(data):
-    """Create a vector for each user representing their ratings."""
+    """
+    Create a vector for each user representing their ratings for different items. The function creates a user-item matrix
+    from the data, replaces missing values with 0 (assuming the user has not rated that item), and then converts the
+    matrix into a list of user vectors.
+
+    Parameters:
+    data (pd.DataFrame): The data frame that contains the ratings of the users. It should have columns named 'User_ID',
+                         'Item_ID', and 'Rating'.
+
+    Returns:
+    list: A list of user vectors. Each vector is a list of ratings corresponding to the items. The index in the outer
+          list corresponds to the user's ID.
+
+    Example:
+    create_user_vectors(data) will return a list of user vectors based on the ratings in the data frame.
+    """
     # Pivot the data to create a user-item matrix
     user_item_matrix = data.pivot(index='User_ID', columns='Item_ID', values='Rating')
 
@@ -29,7 +44,23 @@ def create_user_vectors(data):
 
 
 def cosine_similarity(encrypted_vector1, encrypted_vector2, norm1, norm2):
-    """Calculate the cosine similarity between two encrypted vectors."""
+    """
+    Calculate the cosine similarity between two encrypted vectors. Cosine similarity is a measure of similarity between
+    two non-zero vectors, defined to equal the cosine of the angle between them. The function requires the norms of the
+    vectors, as well as a decryption function for the dot product of the encrypted vectors.
+
+    Parameters:
+    encrypted_vector1 (list): The first encrypted vector.
+    encrypted_vector2 (list): The second encrypted vector.
+    norm1 (float): The norm (magnitude) of the first encrypted vector.
+    norm2 (float): The norm (magnitude) of the second encrypted vector.
+
+    Returns:
+    float: The cosine similarity between the two encrypted vectors.
+
+    Example:
+    cosine_similarity([1, 0], [0, 1], 1.0, 1.0) will return 0.0 because the vectors are orthogonal.
+    """
     # Calculate the dot product between the vectors
     dot_product = encrypted_vector1.dot(encrypted_vector2)
 
@@ -43,7 +74,24 @@ def cosine_similarity(encrypted_vector1, encrypted_vector2, norm1, norm2):
 
 
 def calculate_similarities(user_id, encrypted_vectors, norms):
-    """Calculate the similarities between a given user's vector and all user vectors."""
+    """
+    Calculate the similarities between a given user's vector and all other user vectors. The similarity is calculated
+    using the cosine similarity, which measures the cosine of the angle between two vectors.
+
+    Parameters:
+    user_id (int): The ID of the user for whom we want to calculate similarities.
+    encrypted_vectors (list): A list of encrypted vectors corresponding to each user. The index in the list corresponds
+                              to the user's ID.
+    norms (list): A list of norms corresponding to each user's encrypted vector. The index in the list corresponds to
+                  the user's ID.
+
+    Returns:
+    list: A list of similarity scores corresponding to each user. The index in the list corresponds to the user's ID.
+
+    Example:
+    calculate_similarities(0, encrypted_vectors, norms) will return a list of similarity scores between the user at
+    index 0 and all other users, based on their encrypted vectors and norms.
+    """
     # Get the encrypted vector and norm for the given user
     encrypted_vector1 = encrypted_vectors[user_id]
     norm1 = norms[user_id]
@@ -59,7 +107,23 @@ def calculate_similarities(user_id, encrypted_vectors, norms):
 
 
 def find_similar_users(user_id, similarities, n=10):
-    """Find the users who are most similar to a given user."""
+    """
+    Find the users who are most similar to a given user. The function takes a list of similarity scores and returns the
+    indices of the top n most similar users.
+
+    Parameters:
+    user_id (int): The ID of the user for whom we want to find similar users.
+    similarities (list): A list of similarity scores corresponding to each user. The index in the list corresponds to
+                         the user's index.
+    n (int, optional): The number of similar users to find. Default is 10.
+
+    Returns:
+    list: The indices of the top n most similar users.
+
+    Example:
+    find_similar_users(0, [0.1, 0.3, 0.2]) will return [1, 2], which are the indices of the users most similar to the
+    user at index 0.
+    """
     # Create a list of user IDs and their corresponding similarities
     user_similarities = list(enumerate(similarities))
 
@@ -97,7 +161,25 @@ def decrypt_vector(encrypted_vector):
 
 
 def recommend_items(user_index, similar_users_indices, data, n=10):
-    """Recommend items to a user based on the ratings of similar users."""
+    """
+    Recommend items to a user based on the ratings of similar users. The function first finds the items that similar
+    users have rated highly (with a rating of 4 or more) and which the given user hasn't rated. The items are then
+    recommended based on their popularity among the similar users.
+
+    Parameters:
+    user_index (int): The index of the user to whom we want to make recommendations.
+    similar_users_indices (list): The indices of the users who are similar to the given user.
+    data (pd.DataFrame): The data frame that contains the ratings of the users. It should have columns named 'User_ID',
+                         'Item_ID', and 'Rating'.
+    n (int, optional): The number of recommendations to make. Default is 10.
+
+    Returns:
+    list: The IDs of the top n recommended items.
+
+    Example:
+    recommend_items(0, [1, 2, 3], data) will find the top 10 items to recommend to the user at index 0, based on the
+    ratings of the users at indices 1, 2, and 3.
+    """
     # Get the User_ID of the given user
     user_id = data['User_ID'].unique()[user_index]
 
@@ -151,31 +233,48 @@ def sum_ratings(encrypted_data, private_key):
     return decrypted_sums
 
 
-def generate_synthetic_data(participant_count: object, items_per_participant: object) -> object:
-  data = []
+def generate_synthetic_data(participant_count: int, items_per_participant: int) -> None:
+    """
+    Generates synthetic data for a specified number of participants, with a certain number of items per participant.
+    Each item consists of a random user ID and a random rating. The data is saved into individual Excel files for each
+    participant and a combined Excel file for all participants.
 
-  for participant_id in range(1, participant_count + 1):
-    participant_data = []
-    for item_id in range(1, items_per_participant + 1):
-      user_id = random.randint(1000, 9999)  # Generate random user ID
-      rating = random.randint(1, 5)  # Generate random rating
+    Parameters:
+    participant_count (int): The number of participants for whom to generate data.
+    items_per_participant (int): The number of items per participant to be generated.
 
-      participant_data.append({'User_ID': user_id, 'Item_ID': item_id, 'Rating': rating})
+    Returns:
+    None
 
-    data.extend(participant_data)
+    Example:
+    generate_synthetic_data(10, 5) will generate data for 10 participants, each with 5 items. It will create 10
+    individual Excel files (named as 'participant_1_data.xlsx', 'participant_2_data.xlsx', etc.) and one combined Excel
+    file (named as 'combined_participant_data.xlsx').
+    """
 
-    # Create a separate Excel file for each participant
-    participant_df = pd.DataFrame(participant_data)
-    excel_filename = f'participant_{participant_id}_data.xlsx'
-    participant_df.to_excel(excel_filename, index=False)
-    print(f'Synthetic data for Participant {participant_id} saved to {excel_filename}')
+    data = []
 
-  # Create a combined Excel file for all participants
-  combined_df = pd.DataFrame(data)
-  combined_excel_filename = 'combined_participant_data.xlsx'
-  combined_df.to_excel(combined_excel_filename, index=False)
-  print(f'Combined synthetic data for all participants saved to {combined_excel_filename}')
+    for participant_id in range(1, participant_count + 1):
+        participant_data = []
+        for item_id in range(1, items_per_participant + 1):
+            user_id = random.randint(1000, 9999)  # Generate random user ID
+            rating = random.randint(1, 5)  # Generate random rating
 
+            participant_data.append({'User_ID': user_id, 'Item_ID': item_id, 'Rating': rating})
+
+        data.extend(participant_data)
+
+        # Create a separate Excel file for each participant
+        participant_df = pd.DataFrame(participant_data)
+        excel_filename = f'participant_{participant_id}_data.xlsx'
+        participant_df.to_excel(excel_filename, index=False)
+        print(f'Synthetic data for Participant {participant_id} saved to {excel_filename}')
+
+    # Create a combined Excel file for all participants
+    combined_df = pd.DataFrame(data)
+    combined_excel_filename = 'combined_participant_data.xlsx'
+    combined_df.to_excel(combined_excel_filename, index=False)
+    print(f'Combined synthetic data for all participants saved to {combined_excel_filename}')
 
 # def main():
 #     # Open a file dialog for the user to select the Excel file
