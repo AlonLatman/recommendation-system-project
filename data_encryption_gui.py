@@ -70,20 +70,49 @@ make it a viable solution for platforms that prioritize user privacy. Future wor
 and exploring other encryption schemes to further enhance system performance.
 '''
 def show_lab_report():
+    """
+    Opens the lab report in a window
+    """
     messagebox.showinfo("Lab Report", lab_report)
 
 def open_webpage():
+    """
+    Opens the Wikipedia page for "CKKS" in the default web browser.
+    """
     webbrowser.open('https://he.wikipedia.org/wiki/CKKS')
 
 def open_webpage2():
+    """
+    Opens the Wikipedia page for "Recommender System" in the default web browser.
+    """
     webbrowser.open('https://en.wikipedia.org/wiki/Recommender_system')
 
 
 def open_webpage3():
-    webbrowser.open('https://en.wikipedia.org/wiki/Recommender_system')
+    """
+    Opens the Wikipedia page for "Cosine similarity" in the default web browser.
+    """
+    webbrowser.open('https://en.wikipedia.org/wiki/Cosine_similarity')
 
 
 def generate_synthetic_data_gui():
+    """
+    Generates synthetic data through a GUI by fetching the number of participants and items per participant from input fields.
+
+    Description:
+        The function is designed to be used in a GUI environment.
+        It fetches the number of participants and items per participant from the specified input fields.
+        If the input values are not valid integers, an error message is displayed to the user.
+        After validating the inputs, the function calls the generate_synthetic_data method with the input values to generate the synthetic data.
+        If any exception occurs during this process, an error message is displayed to the user.
+        On successful generation of synthetic data, an informational message is shown to the user.
+
+    Assumptions:
+        The participants_input and items_input objects have a get() method that fetches the values from the respective input fields in the GUI.
+        The messagebox module is used to display error or informational messages to the user.
+        The generate_synthetic_data function is defined elsewhere and takes two integer parameters:
+        the number of participants and items per participant.
+    """
     # Get the number of participants and items per participant from the input fields
     try:
         participant_count = int(participants_input.get())
@@ -103,11 +132,36 @@ def generate_synthetic_data_gui():
 
 
 def load_data_and_recommend_items():
-    # Open a file dialog for the user to select the Excel file
-    file_path = filedialog.askopenfilename()
+    """
+    Loads user-item data from an Excel file, processes the data, and makes item recommendations for a randomly selected user.
 
-    if not file_path:  # Check that a file was selected
-        messagebox.showerror("File Error", "Please select a valid Excel file.")
+    The function performs the following steps:
+    1. Opens a file dialog for the user to select the Excel file.
+    2. Reads and loads the data from the Excel file.
+    3. Creates user vectors based on the loaded data.
+    4. Initializes a TenSEAL context for encryption.
+    5. Encrypts the user vectors and calculates their norms.
+    6. Randomly selects a user.
+    7. Calculates similarities between the selected user and other users.
+    8. Identifies the most similar users based on the calculated similarities.
+    9. Makes item recommendations for the selected user based on the items liked by similar users.
+    10. Displays the recommended items to the user through a message box.
+
+    If any error occurs during the process, an error message is displayed to the user.
+
+    Assumptions:
+    - The Excel file contains the necessary columns for user-item interactions.
+    - Required modules (`pandas`, `numpy`, `TenSEAL`, etc.) have been imported.
+    - Supporting functions (`create_user_vectors`, `encrypt_vector`, `calculate_similarities`, `find_similar_users`, and `recommend_items`) are defined elsewhere and are compatible with the data structure.
+
+    Raises:
+    - `Exception`: If there's an error during data processing or recommendation generation.
+    """
+    # Open a file dialog for the user to select the Excel file
+    file_path = "combined_participant_data.xlsx"
+
+    if not os.path.exists(file_path):  # Check that the file exists
+        messagebox.showerror("File Error", "Data file not found. Please ensure combined_participant_data.xlsx is in the project folder.")
         return
 
     try:
@@ -149,7 +203,6 @@ def load_data_and_recommend_items():
         messagebox.showerror("Error", str(e))
         return
 
-
 # Create a window
 window = tk.Tk()
 window.title('Privacy-Preserving Item Recommendation System')
@@ -180,7 +233,7 @@ recommendation_frame = ttk.Frame(window, padding='3 3 12 12')
 recommendation_frame.grid(column=0, row=1, sticky=(tk.W, tk.E))
 
 # Create a button for loading data and recommending items
-recommend_button = ttk.Button(recommendation_frame, text='Load Data and Recommend Items', command=load_data_and_recommend_items)
+recommend_button = ttk.Button(recommendation_frame, text='Recommend Items', command=load_data_and_recommend_items)
 
 # Position the control in the grid
 recommend_button.grid(column=0, row=0)
