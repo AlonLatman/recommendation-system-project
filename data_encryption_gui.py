@@ -56,6 +56,8 @@ During the testing phase, the system demonstrated a balance between preserving u
 The synthetic data tests exhibited a recommendation accuracy of approximately 100% for 10 items and above for 5 items the accuracy was 70%. 
 Moreover, the computational overhead introduced by encryption was found to be manageable, with processing times increasing 
 by approximately 40% compared to non-encrypted data.
+Please take note that even with 20 items because the data is synthetic you could receive only 2 recommendations depends on the
+rating given when the data is created.
 
 Discussion: 
 The implemented system can provide item recommendations while preserving user privacy by using homomorphic encryption.
