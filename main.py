@@ -2,11 +2,9 @@ import logging
 import random
 import pandas as pd
 import numpy as np
-import tkinter as tk
-from tkinter import filedialog
 import tenseal as ts
 
-
+# global context for encryption
 context = ts.context(
     ts.SCHEME_TYPE.CKKS,
     poly_modulus_degree=8192,
@@ -159,6 +157,31 @@ def find_similar_users(user_id, similarities, n=10):
 
 
 def load_data_from_excel(file_path):
+    """
+    Loads data from an Excel file and processes it to create a user-item matrix.
+
+    Parameters:
+        file_path (str): The path to the Excel file that contains the data.
+
+    Returns:
+        numpy.ndarray: A 2D numpy array (user-item matrix) where rows represent users, columns represent items,
+        and the values represent ratings.
+        Unrated items are represented as 0.
+
+    Description:
+        This function loads data from a given Excel file and processes it to create a user-item matrix.
+        The input Excel file is expected to have at least the following columns: User_ID, Item_ID, and Rating.
+
+    The function reads the Excel file into a DataFrame and then pivots the DataFrame to create a user-item matrix.
+    Each row of the matrix corresponds to a user, each column corresponds to an item, and the matrix values represent
+    the ratings given by users to items.
+    If a user hasn't rated an item, the corresponding matrix value is filled with 0.
+
+    Assumptions:
+        The Excel file contains columns named User_ID, Item_ID, and Rating.
+        The Rating column contains numeric values.
+        The pandas and numpy libraries have been imported as pd and np respectively.
+    """
     # Load the data from the Excel file
     df = pd.read_excel(file_path)
 
@@ -171,7 +194,28 @@ def load_data_from_excel(file_path):
 
 
 def encrypt_vector(vector, context):
-    """Encrypt a vector using the CKKS scheme."""
+    """
+    Encrypts a vector using the CKKS scheme.
+
+    Parameters:
+        vector (list): A non-empty list of values that need to be encrypted.
+        context: A context required by the CKKS scheme for encryption.
+
+    Returns:
+        An encrypted version of the input vector.
+    Raises:
+        ValueError: If the input vector is not a list or is an empty list.
+        Exception: If any other error occurs during the encryption process.
+
+    Description:
+        This function encrypts an input vector using the CKKS scheme.
+        The CKKS scheme requires a context which should be provided as the second parameter.
+
+    Before starting the encryption process, the function checks if the input vector is a list and if it's not empty.
+    If either of these conditions is not met, a ValueError is raised.
+    The encryption process is logged at the beginning and end for tracking purposes.
+    If any error occurs during the encryption, it's logged as an error message and the exception is raised further.
+    """
     try:
         # Check if vector is a list and not empty
         if not isinstance(vector, list) or len(vector) == 0:
@@ -257,6 +301,30 @@ def recommend_items(user_index, similar_users_indices, data, n=10):
     return top_recommended_items
 
 def sum_ratings(encrypted_data, private_key):
+    """
+    Calculates the sum of ratings for each item using encrypted data, then decrypts and returns the summed ratings.
+
+    Parameters:
+        encrypted_data (numpy.ndarray): A 2D numpy array where rows represent users, columns represent items, and the values are encrypted ratings.
+        private_key (unknown type): The private key used to decrypt the summed ratings.
+
+    Returns:
+        list: A list of decrypted sums of ratings for each item.
+
+    Description:
+        The function processes a user-item matrix where the ratings are encrypted.
+        It calculates the sum of ratings for each item (column) in the matrix.
+
+    The sum calculation is initiated with an encrypted value of 0.
+    This is achieved by subtracting the encrypted rating value from itself for the first user for each item.
+    The function then iterates over each user's rating for that item and adds it to the sum.
+    Once all the encrypted sums are calculated, they are decrypted using the provided private key.
+
+    Assumptions:
+        The encrypted_data matrix is assumed to have encrypted numeric values.
+        The decryption process using the private_key is straightforward and doesn't raise exceptions for invalid data.
+        The numpy library has been imported as np.
+    """
     # Calculate the sum of the ratings for each item
     sums = np.empty(encrypted_data.shape[1], dtype=object)
     for j in range(encrypted_data.shape[1]):
