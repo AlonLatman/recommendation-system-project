@@ -1,8 +1,8 @@
-import logging
-import random
-import pandas as pd
-import numpy as np
-import tenseal as ts
+import logging  # Importing the logging module for generating logging messages and debugging
+import random  # Importing the random module for generating random numbers and selections
+import pandas as pd  # Importing pandas, a powerful library for data manipulation and analysis
+import numpy as np  # Importing numpy for numerical operations and working with arrays
+import tenseal as ts  # Importing tenseal for homomorphic encryption operations
 
 # global context for encryption
 context = ts.context(
