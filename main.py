@@ -309,46 +309,6 @@ def recommend_items(user_index, similar_users_indices, data, n=10):
     return top_recommended_items
 
 
-def sum_ratings(encrypted_data, private_key):
-    """
-    Calculates the sum of ratings for each item using encrypted data, then decrypts and returns the summed ratings.
-
-    Parameters:
-        encrypted_data (numpy.ndarray): A 2D numpy array where rows represent users, columns represent items, and the values are encrypted ratings.
-        private_key (unknown type): The private key used to decrypt the summed ratings.
-
-    Returns:
-        list: A list of decrypted sums of ratings for each item.
-
-    Description:
-        The function processes a user-item matrix where the ratings are encrypted.
-        It calculates the sum of ratings for each item (column) in the matrix.
-
-    The sum calculation is initiated with an encrypted value of 0.
-    This is achieved by subtracting the encrypted rating value from itself for the first user for each item.
-    The function then iterates over each user's rating for that item and adds it to the sum.
-    Once all the encrypted sums are calculated, they are decrypted using the provided private key.
-
-    Assumptions:
-        The encrypted_data matrix is assumed to have encrypted numeric values.
-        The decryption process using the private_key is straightforward and doesn't raise exceptions for invalid data.
-        The numpy library has been imported as np.
-    """
-    # Calculate the sum of the ratings for each item
-    sums = np.empty(encrypted_data.shape[1], dtype=object)
-    for j in range(encrypted_data.shape[1]):
-        # Initialize the sum to an encrypted 0
-        sums[j] = encrypted_data[0, j] - encrypted_data[0, j]
-        for i in range(encrypted_data.shape[0]):
-            # Add the encrypted rating to the sum
-            sums[j] += encrypted_data[i, j]
-
-    # Decrypt the sums
-    decrypted_sums = [private_key.decrypt(sum) for sum in sums]
-
-    return decrypted_sums
-
-
 def generate_synthetic_data(participant_count: int, items_per_participant: int) -> None:
     """
     Generates synthetic data for a specified number of participants, with a certain number of items per participant.
@@ -499,9 +459,26 @@ def factorize_and_recommend(data, user_id, num_items=5):
     Returns:
     - Top-rated items for the user.
     """
+    # Ensure data contains required columns
+    required_columns = {'User_ID', 'Item_ID', 'Rating'}
+    if not required_columns.issubset(data.columns):
+        raise ValueError(f"Data should contain the following columns: {required_columns}")
+
+    # Ensure user_id exists in the data
+    if user_id not in data['User_ID'].values:
+        raise ValueError(f"User_ID {user_id} not found in the data.")
 
     # Transform the data into a user-item matrix
     user_item_matrix = data.pivot(index='User_ID', columns='Item_ID', values='Rating').fillna(0)
+
+    # Ensure the data is not empty
+    if user_item_matrix.empty:
+        raise ValueError("User-Item matrix is empty. Please provide valid data.")
+
+    # Ensure num_items is not greater than total items in the dataset
+    if num_items > user_item_matrix.shape[1]:
+        raise ValueError(f"Requested number of items ({num_items}) is greater than available items ({user_item_matrix.shape[1]}).")
+
 
     # Perform Singular Value Decomposition
     U, sigma, Vt = np.linalg.svd(user_item_matrix, full_matrices=False)
@@ -548,6 +525,8 @@ def generate_recommendations(user_index, decrypted_data, U, sigma, Vt, num_items
 
     # Recommend the top-rated items
     top_rated_item_indices = np.argsort(predicted_ratings)[::-1][:num_items]
+
+    reencrypt_data(decrypted_data)
 
     return top_rated_item_indices
 

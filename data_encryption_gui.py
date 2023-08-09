@@ -188,8 +188,6 @@ def encrypted_data_factorization_callback():
 
     recommendation = generate_recommendations(user_index, decrypted_matrix, U, sigma, Vt)
 
-    reencrypt_data(decrypted_matrix)
-
     # Placeholder for further processing of the factorized matrices
     # For now, just show a message with the shape of the matrices
     messagebox.showinfo(
