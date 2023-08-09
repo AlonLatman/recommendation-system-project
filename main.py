@@ -439,7 +439,7 @@ def detect_anomalies(data):
 
     min_valid_rating = 1
     max_valid_rating = 5
-    min_user_items = 1
+    min_user_items = 0
     min_item_ratings = 1
 
     invalid_ratings = data[(data['Rating'] < min_valid_rating) | (data['Rating'] > max_valid_rating)]
