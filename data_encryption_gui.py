@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import tenseal as ts
 from main import create_user_vectors, generate_synthetic_data, encrypt_vector, calculate_similarities, \
-    find_similar_users, recommend_items
+    find_similar_users, recommend_items, detect_anomalies
 import webbrowser
 
 
@@ -172,6 +172,8 @@ def load_data_and_recommend_items():
 
         # Create user vectors
         user_vectors = create_user_vectors(data)
+
+        detect_anomalies(data)
 
         # Create a TenSEAL context for the encryption
         context = ts.context(ts.SCHEME_TYPE.CKKS, poly_modulus_degree=8192, coeff_mod_bit_sizes=[60, 40, 40, 60])

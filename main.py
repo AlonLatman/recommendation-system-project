@@ -3,6 +3,11 @@ import random  # Importing the random module for generating random numbers and s
 import pandas as pd  # Importing pandas, a powerful library for data manipulation and analysis
 import numpy as np  # Importing numpy for numerical operations and working with arrays
 import tenseal as ts  # Importing tenseal for homomorphic encryption operations
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+from sklearn.ensemble import IsolationForest
 
 # global context for encryption
 context = ts.context(
@@ -300,6 +305,7 @@ def recommend_items(user_index, similar_users_indices, data, n=10):
 
     return top_recommended_items
 
+
 def sum_ratings(encrypted_data, private_key):
     """
     Calculates the sum of ratings for each item using encrypted data, then decrypts and returns the summed ratings.
@@ -396,3 +402,60 @@ def generate_synthetic_data(participant_count: int, items_per_participant: int) 
         print(f'Combined synthetic data for all participants saved to {combined_excel_filename}')
     except Exception as e:
         print(f"Error saving combined synthetic data. Error: {e}")
+
+
+def detect_anomalies(data):
+    """Detect anomalies in synthetic user-item interaction data.
+
+    Parameters:
+    - data (pd.DataFrame): The synthetic data containing 'User_ID', 'Item_ID', and 'Rating' columns.
+
+    Raises:
+    - ValueError: If anomalies are detected in the data.
+    """
+    # Feature Engineering
+    user_item_count = data.groupby('User_ID')['Item_ID'].count()
+    user_avg_rating = data.groupby('User_ID')['Rating'].mean()
+    user_rating_std = data.groupby('User_ID')['Rating'].std()
+    user_max_rating = data.groupby('User_ID')['Rating'].max()
+    user_min_rating = data.groupby('User_ID')['Rating'].min()
+    user_unique_items = data.groupby('User_ID')['Item_ID'].nunique()
+    user_rating_skew = data.groupby('User_ID')['Rating'].skew()
+
+    user_features = pd.concat([user_item_count, user_avg_rating, user_rating_std,
+                               user_max_rating, user_min_rating, user_unique_items,
+                               user_rating_skew], axis=1)
+    user_features.columns = ['num_items_rated', 'avg_rating', 'rating_std',
+                             'max_rating', 'min_rating', 'unique_items_rated', 'rating_skew']
+    user_features.fillna(0, inplace=True)
+
+    min_valid_rating = 1
+    max_valid_rating = 5
+    min_user_items = 1
+    min_item_ratings = 1
+
+    invalid_ratings = data[(data['Rating'] < min_valid_rating) | (data['Rating'] > max_valid_rating)]
+    users_with_few_items = user_item_count[user_item_count < min_user_items]
+    items_with_few_ratings = data['Item_ID'].value_counts()[data['Item_ID'].value_counts() < min_item_ratings]
+
+    if not invalid_ratings.empty:
+        raise ValueError("Invalid ratings detected!")
+    if not users_with_few_items.empty:
+        raise ValueError("Users with too few rated items detected!")
+    if not items_with_few_ratings.empty:
+        raise ValueError("Items with too few ratings detected!")
+
+    # Anomaly Detection using Isolation Forest
+    clf = IsolationForest(contamination=0.1)
+    anomalies = clf.fit_predict(user_features)
+    user_features['anomaly'] = anomalies
+    anomalous_users = user_features[user_features['anomaly'] == -1]
+
+    # Raising an error if anomalies are detected
+    if not anomalous_users.empty:
+        raise ValueError("Anomalies detected in the synthetic data!")
+
+    try:
+        result = "No anomalies detected."
+    except ValueError as e:
+        result = str(e)
