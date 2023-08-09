@@ -8,6 +8,8 @@ import tenseal as ts
 from main import create_user_vectors, generate_synthetic_data, encrypt_vector, calculate_similarities, \
     find_similar_users, recommend_items, detect_anomalies, factorize_and_recommend
 import webbrowser
+import atexit
+import glob
 
 
 lab_report = '''
@@ -310,6 +312,16 @@ matrix_factorization_frame.grid(column=0, row=6, sticky=(tk.W, tk.E))
 matrix_factorization_button = ttk.Button(matrix_factorization_frame, text='Unencrypted Data Matrix Factorization Recommendations',
                                          command=matrix_factorization_callback)
 matrix_factorization_button.grid(column=0, row=0)
+
+def cleanup_excel_files():
+    # Find all Excel files in the directory
+    excel_files = glob.glob("*.xlsx")
+    for file in excel_files:
+        os.remove(file)
+
+# Register the cleanup function to run on program exit
+atexit.register(cleanup_excel_files)
+
 
 # Start the event loop
 window.mainloop()
