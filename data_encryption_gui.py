@@ -6,10 +6,18 @@ import numpy as np
 import pandas as pd
 import tenseal as ts
 from main import create_user_vectors, generate_synthetic_data, encrypt_vector, calculate_similarities, \
-    find_similar_users, recommend_items, detect_anomalies, factorize_and_recommend
+    find_similar_users, recommend_items, detect_anomalies, factorize_and_recommend, perform_matrix_factorization, \
+    generate_user_item_matrix, generate_recommendations, reencrypt_data
 import webbrowser
 import atexit
 import glob
+
+context = ts.context(
+    ts.SCHEME_TYPE.CKKS,
+    poly_modulus_degree=8192,
+    coeff_mod_bit_sizes=[60, 40, 40, 60]
+)
+context.global_scale = 2**40
 
 
 lab_report = '''
@@ -155,6 +163,39 @@ def matrix_factorization_callback():
     except Exception as e:
         messagebox.showerror("Error", str(e))
 
+
+def encrypted_data_factorization_callback():
+    """Callback function for encrypted data matrix factorization"""
+
+    data = pd.read_excel("combined_participant_data.xlsx")
+
+    user_item_matrix = generate_user_item_matrix(data)
+    # Encrypt the user-item matrix
+    encrypted_matrix = []
+    for index, row in user_item_matrix.iterrows():
+        encrypted_row = ts.ckks_vector(context, row.tolist())
+        encrypted_matrix.append(encrypted_row)
+
+    random_user_id = random.choice(user_item_matrix.index.tolist())
+
+    # Fetch the corresponding user_index for the selected user_id
+    user_index = user_item_matrix.index.get_loc(random_user_id)
+
+    # Send encrypted matrix to the matrix factorization process
+    # For demonstration, we'll just decrypt and factorize
+    decrypted_matrix = [encrypted_row.decrypt() for encrypted_row in encrypted_matrix]
+    U, sigma, Vt = perform_matrix_factorization(decrypted_matrix)
+
+    recommendation = generate_recommendations(user_index, decrypted_matrix, U, sigma, Vt)
+
+    reencrypt_data(decrypted_matrix)
+
+    # Placeholder for further processing of the factorized matrices
+    # For now, just show a message with the shape of the matrices
+    messagebox.showinfo(
+        "Info",
+        f"Encrypted Data Factorization Matrix Calculation completed.\n for user: {user_index}, Encrypted Matrix Factorization Recommendations: {recommendation}"
+    )
 
 def load_data_and_recommend_items():
     """
@@ -312,6 +353,12 @@ matrix_factorization_frame.grid(column=0, row=6, sticky=(tk.W, tk.E))
 matrix_factorization_button = ttk.Button(matrix_factorization_frame, text='Unencrypted Data Matrix Factorization Recommendations',
                                          command=matrix_factorization_callback)
 matrix_factorization_button.grid(column=0, row=0)
+
+matrix_factorization_frame2 = ttk.Frame(window, padding='3 3 12 12')
+matrix_factorization_frame2.grid(column=0, row=7, sticky=(tk.W, tk.E))
+# Create a button for "Encrypted Data Factorization Matrix Calculation"
+encrypted_data_factorization_button = ttk.Button(matrix_factorization_frame2, text="Encrypted Data Factorization Matrix Calculation", command=encrypted_data_factorization_callback)
+encrypted_data_factorization_button.grid(column=0, row=0, sticky=(tk.W, tk.E), pady=(10, 10))
 
 def cleanup_excel_files():
     # Find all Excel files in the directory

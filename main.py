@@ -526,3 +526,48 @@ def factorize_and_recommend(data, user_id, num_items=5):
         return top_items
 
     return top_rated_items_internal(user_id, U, sigma, Vt, num_items)
+
+
+def decrypt_in_secure_environment(encrypted_data):
+    """Decrypt data in a secure environment using TenSEAL."""
+    decrypted_data = [encrypted_row.decrypt() for encrypted_row in encrypted_data]
+    return decrypted_data
+
+def perform_matrix_factorization(decrypted_data):
+    """Perform matrix factorization on the decrypted data using SVD."""
+    U, sigma, Vt = np.linalg.svd(decrypted_data, full_matrices=False)
+    return U, sigma, Vt
+
+def generate_recommendations(user_index, decrypted_data, U, sigma, Vt, num_items=5):
+    """Generate recommendations for a user based on the factorized matrices."""
+    # Convert sigma to a diagonal matrix
+    sigma_matrix = np.diag(sigma)
+
+    # Calculate the predicted ratings for the user
+    predicted_ratings = np.dot(np.dot(U[user_index, :], sigma_matrix), Vt)
+
+    # Recommend the top-rated items
+    top_rated_item_indices = np.argsort(predicted_ratings)[::-1][:num_items]
+
+    return top_rated_item_indices
+
+def reencrypt_data(data):
+    """Re-encrypt data in the secure environment before exiting using TenSEAL."""
+    encrypted_data = [ts.ckks_vector(context, row) for row in data]
+    return encrypted_data
+
+def recommend_for_user(user_index, encrypted_data, num_items=5):
+    """Get recommendations for a user."""
+    decrypted_data = decrypt_in_secure_environment(encrypted_data)
+    U, sigma, Vt = perform_matrix_factorization(decrypted_data)
+    recommended_items = generate_recommendations(user_index, decrypted_data, U, sigma, Vt, num_items)
+
+    return recommended_items
+
+
+def generate_user_item_matrix(data):
+    """Generate a user-item matrix from the provided data."""
+
+    user_item_matrix = data.pivot(index='User_ID', columns='Item_ID', values='Rating').fillna(0)
+
+    return user_item_matrix
