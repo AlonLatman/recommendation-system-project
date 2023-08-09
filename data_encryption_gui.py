@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import tenseal as ts
 from main import create_user_vectors, generate_synthetic_data, encrypt_vector, calculate_similarities, \
-    find_similar_users, recommend_items, detect_anomalies
+    find_similar_users, recommend_items, detect_anomalies, factorize_and_recommend
 import webbrowser
 
 
@@ -131,6 +131,27 @@ def generate_synthetic_data_gui():
         return
 
     messagebox.showinfo("Success", "Synthetic data generated successfully.")
+
+
+def matrix_factorization_callback():
+    try:
+        # Load the data
+        data = pd.read_excel("combined_participant_data.xlsx")
+
+        # Randomly select a user for recommendations
+        user_id = random.choice(data['User_ID'].unique())
+
+        # Get recommendations using matrix factorization
+        recommendations = factorize_and_recommend(data, user_id)
+
+        if len(recommendations) > 0:
+            messagebox.showinfo("Matrix Factorization Recommendations",
+                                f"Recommended items for user {user_id}: " + ", ".join(map(str, recommendations)))
+        else:
+            messagebox.showinfo("Matrix Factorization Recommendations",
+                                f"No recommended items found for user {user_id}.")
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
 
 
 def load_data_and_recommend_items():
@@ -281,6 +302,14 @@ open_webpage_button = ttk.Button(button_frame, text='Open Cosine similarity Wiki
 
 # Position the button in the grid
 open_webpage_button.grid(column=0, row=0)
+
+matrix_factorization_frame = ttk.Frame(window, padding='3 3 12 12')
+matrix_factorization_frame.grid(column=0, row=6, sticky=(tk.W, tk.E))
+
+# Create and position the matrix factorization button in the frame
+matrix_factorization_button = ttk.Button(matrix_factorization_frame, text='Unencrypted Data Matrix Factorization Recommendations',
+                                         command=matrix_factorization_callback)
+matrix_factorization_button.grid(column=0, row=0)
 
 # Start the event loop
 window.mainloop()

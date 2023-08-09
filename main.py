@@ -485,3 +485,44 @@ def detect_anomalies(data):
             log_file.write("\n\n")
 
     return "Anomaly detection complete. Check the log for any detected anomalies."
+
+
+def factorize_and_recommend(data, user_id, num_items=5):
+    """
+    Factorizes the user-item matrix using SVD and returns the top-rated items for a given user.
+
+    Parameters:
+    - data: DataFrame containing User_ID, Item_ID, and Rating columns.
+    - user_id: ID of the user.
+    - num_items: Number of top-rated items to return.
+
+    Returns:
+    - Top-rated items for the user.
+    """
+
+    # Transform the data into a user-item matrix
+    user_item_matrix = data.pivot(index='User_ID', columns='Item_ID', values='Rating').fillna(0)
+
+    # Perform Singular Value Decomposition
+    U, sigma, Vt = np.linalg.svd(user_item_matrix, full_matrices=False)
+
+    def top_rated_items_internal(user_id, U, sigma, Vt, num_items=5):
+        """
+        Internal function to return the top-rated items for a given user.
+        """
+        # Convert user_id to user index
+        user_index = user_item_matrix.index.get_loc(user_id)
+
+        # Convert sigma to a diagonal matrix
+        sigma_matrix = np.diag(sigma)
+
+        # Calculate the predicted ratings for the user
+        predicted_ratings = np.dot(np.dot(U[user_index, :], sigma_matrix), Vt)
+
+        # Get the top-rated items
+        top_items_indices = np.argsort(predicted_ratings)[::-1][:num_items]
+        top_items = [user_item_matrix.columns[i] for i in top_items_indices]
+
+        return top_items
+
+    return top_rated_items_internal(user_id, U, sigma, Vt, num_items)
