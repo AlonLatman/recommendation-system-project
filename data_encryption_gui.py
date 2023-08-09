@@ -299,11 +299,8 @@ generate_button.grid(column=0, row=2, columnspan=2)
 # Create a frame for the recommendation controls
 recommendation_frame = ttk.Frame(window, padding='3 3 12 12')
 recommendation_frame.grid(column=0, row=1, sticky=(tk.W, tk.E))
-
 # Create a button for loading data and recommending items
 recommend_button = ttk.Button(recommendation_frame, text='Recommend Items', command=load_data_and_recommend_items)
-
-# Position the control in the grid
 recommend_button.grid(column=0, row=0)
 
 # Create a frame for the lab report control
@@ -312,22 +309,18 @@ lab_report_frame.grid(column=0, row=2, sticky=(tk.W, tk.E))
 
 # Create a button for showing the lab report
 show_report_button = ttk.Button(lab_report_frame, text='Show Lab Report', command=show_lab_report)
-
-# Position the control in the grid
 show_report_button.grid(column=0, row=0)
 
 # Create a new frame for the button
 button_frame = ttk.Frame(window, padding='3 3 12 12')
-button_frame.grid(column=0, row=3, sticky=(tk.W, tk.E))
+button_frame.grid(column=0, row=4, sticky=(tk.W, tk.E))
 
 # Create a button for opening the Wikipedia page
 open_webpage_button = ttk.Button(button_frame, text='Open CKKS Wikipedia Page', command=open_webpage)
-
-# Position the button in the grid
 open_webpage_button.grid(column=0, row=0)
 
 button_frame = ttk.Frame(window, padding='3 3 12 12')
-button_frame.grid(column=0, row=4, sticky=(tk.W, tk.E))
+button_frame.grid(column=0, row=5, sticky=(tk.W, tk.E))
 
 # Create a button for opening the Wikipedia page
 open_webpage_button = ttk.Button(button_frame, text='Open Recommendation System Wikipedia Page', command=open_webpage2)
@@ -336,7 +329,7 @@ open_webpage_button = ttk.Button(button_frame, text='Open Recommendation System 
 open_webpage_button.grid(column=0, row=0)
 
 button_frame = ttk.Frame(window, padding='3 3 12 12')
-button_frame.grid(column=0, row=5, sticky=(tk.W, tk.E))
+button_frame.grid(column=0, row=6, sticky=(tk.W, tk.E))
 
 # Create a button for opening the Wikipedia page
 open_webpage_button = ttk.Button(button_frame, text='Open Cosine similarity Wikipedia Page', command=open_webpage3)
@@ -345,7 +338,7 @@ open_webpage_button = ttk.Button(button_frame, text='Open Cosine similarity Wiki
 open_webpage_button.grid(column=0, row=0)
 
 matrix_factorization_frame = ttk.Frame(window, padding='3 3 12 12')
-matrix_factorization_frame.grid(column=0, row=6, sticky=(tk.W, tk.E))
+matrix_factorization_frame.grid(column=0, row=7, sticky=(tk.W, tk.E))
 
 # Create and position the matrix factorization button in the frame
 matrix_factorization_button = ttk.Button(matrix_factorization_frame, text='Unencrypted Data Matrix Factorization Recommendations',
@@ -353,7 +346,7 @@ matrix_factorization_button = ttk.Button(matrix_factorization_frame, text='Unenc
 matrix_factorization_button.grid(column=0, row=0)
 
 matrix_factorization_frame2 = ttk.Frame(window, padding='3 3 12 12')
-matrix_factorization_frame2.grid(column=0, row=7, sticky=(tk.W, tk.E))
+matrix_factorization_frame2.grid(column=0, row=8, sticky=(tk.W, tk.E))
 # Create a button for "Encrypted Data Factorization Matrix Calculation"
 encrypted_data_factorization_button = ttk.Button(matrix_factorization_frame2, text="Encrypted Data Factorization Matrix Calculation", command=encrypted_data_factorization_callback)
 encrypted_data_factorization_button.grid(column=0, row=0, sticky=(tk.W, tk.E), pady=(10, 10))
