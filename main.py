@@ -405,13 +405,18 @@ def generate_synthetic_data(participant_count: int, items_per_participant: int) 
 
 
 def detect_anomalies(data):
-    """Detect anomalies in synthetic user-item interaction data.
+    """
+    Perform machine learning data analysis and anomaly detection on synthetic user-item interaction data.
+
+    This function conducts feature engineering to extract user behavior patterns, visualizes key features,
+    and detects anomalies in the data using the Isolation Forest algorithm. Additionally, it checks for
+    data consistency based on predefined rules.
 
     Parameters:
     - data (pd.DataFrame): The synthetic data containing 'User_ID', 'Item_ID', and 'Rating' columns.
 
     Raises:
-    - ValueError: If anomalies are detected in the data.
+    - ValueError: If anomalies are detected or data consistency rules are violated.
     """
     # Feature Engineering
     user_item_count = data.groupby('User_ID')['Item_ID'].count()
