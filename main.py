@@ -1,12 +1,15 @@
 import logging  # Importing the logging module for generating logging messages and debugging
+import os
 import random  # Importing the random module for generating random numbers and selections
+
+import joblib
 import pandas as pd  # Importing pandas, a powerful library for data manipulation and analysis
 import numpy as np  # Importing numpy for numerical operations and working with arrays
 import tenseal as ts  # Importing tenseal for homomorphic encryption operations
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
+import tensorflow as tf
+from keras import Model
+from keras.src.layers import Dot, Flatten, Embedding
+from pyexpat import model
 from sklearn.ensemble import IsolationForest
 
 # global context for encryption
@@ -464,3 +467,21 @@ def detect_anomalies(data):
         result = "No anomalies detected."
     except ValueError as e:
         result = str(e)
+
+    clf = IsolationForest(contamination=0.1)
+    anomalies = clf.fit_predict(user_features)
+    user_features['anomaly'] = anomalies
+    anomalous_users = user_features[user_features['anomaly'] == -1]
+
+    # Save the trained Isolation Forest model
+    model_path = "isolation_forest_model.pkl"
+    joblib.dump(clf, model_path)
+
+    # Log anomalies instead of raising an error
+    if not anomalous_users.empty:
+        with open("/mnt/data/anomaly_log.txt", "a") as log_file:
+            log_file.write(f"Anomalies detected in the synthetic data at {os.path.basename(data)}:\n")
+            log_file.write(str(anomalous_users))
+            log_file.write("\n\n")
+
+    return "Anomaly detection complete. Check the log for any detected anomalies."
