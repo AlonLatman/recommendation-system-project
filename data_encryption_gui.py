@@ -177,6 +177,7 @@ def encrypted_data_factorization_callback():
         encrypted_matrix.append(encrypted_row)
 
     random_user_id = random.choice(user_item_matrix.index.tolist())
+    print(random_user_id)
 
     # Fetch the corresponding user_index for the selected user_id
     user_index = user_item_matrix.index.get_loc(random_user_id)

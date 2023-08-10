@@ -28,15 +28,16 @@ def create_user_vectors(data):
     matrix into a list of user vectors.
 
     Parameters:
-    data (pd.DataFrame): The data frame that contains the ratings of the users. It should have columns named 'User_ID',
+        data (pd.DataFrame): The data frame that contains the ratings of the users. It should have columns named 'User_ID',
                          'Item_ID', and 'Rating'.
 
     Returns:
-    list: A list of user vectors. Each vector is a list of ratings corresponding to the items. The index in the outer
+        list: A list of user vectors. Each vector is a list of ratings corresponding to the items. The index in the outer
           list corresponds to the user's ID.
 
     Example:
-    create_user_vectors(data) will return a list of user vectors based on the ratings in the data frame.
+        >>>create_user_vectors(data)
+        will return a list of user vectors based on the ratings in the data frame.
     """
     # Pivot the data to create a user-item matrix
     user_item_matrix = data.pivot(index='User_ID', columns='Item_ID', values='Rating')
@@ -57,16 +58,17 @@ def cosine_similarity(encrypted_vector1, encrypted_vector2, norm1, norm2):
     vectors, as well as a decryption function for the dot product of the encrypted vectors.
 
     Parameters:
-    encrypted_vector1 (list): The first encrypted vector.
-    encrypted_vector2 (list): The second encrypted vector.
-    norm1 (float): The norm (magnitude) of the first encrypted vector.
-    norm2 (float): The norm (magnitude) of the second encrypted vector.
+        encrypted_vector1 (list): The first encrypted vector.
+        encrypted_vector2 (list): The second encrypted vector.
+        norm1 (float): The norm (magnitude) of the first encrypted vector.
+        norm2 (float): The norm (magnitude) of the second encrypted vector.
 
     Returns:
-    float: The cosine similarity between the two encrypted vectors.
+        float: The cosine similarity between the two encrypted vectors.
 
     Example:
-    cosine_similarity([1, 0], [0, 1], 1.0, 1.0) will return 0.0 because the vectors are orthogonal.
+        >>>cosine_similarity([1, 0], [0, 1], 1.0, 1.0)
+        will return 0.0 because the vectors are orthogonal.
     """
     # Calculate the dot product between the vectors
     dot_product = encrypted_vector1.dot(encrypted_vector2)
@@ -96,8 +98,9 @@ def calculate_similarities(user_id, encrypted_vectors, norms):
     list: A list of similarity scores corresponding to each user. The index in the list corresponds to the user's ID.
 
     Example:
-    calculate_similarities(0, encrypted_vectors, norms) will return a list of similarity scores between the user at
-    index 0 and all other users, based on their encrypted vectors and norms.
+        >>>calculate_similarities(0, encrypted_vectors, norms)
+        will return a list of similarity scores between the user at index 0 and all other users,
+        based on their encrypted vectors and norms.
     """
     if not isinstance(user_id, int) or user_id < 0 or user_id >= len(encrypted_vectors) or user_id >= len(norms):
         raise ValueError(
@@ -129,21 +132,25 @@ def calculate_similarities(user_id, encrypted_vectors, norms):
 
 def find_similar_users(user_id, similarities, n=10):
     """
-    Find the users who are most similar to a given user. The function takes a list of similarity scores and returns the
-    indices of the top n most similar users.
+    Identifies the indices of the top n users most similar to the given user based on similarity scores.
 
     Parameters:
-    user_id (int): The ID of the user for whom we want to find similar users.
-    similarities (list): A list of similarity scores corresponding to each user. The index in the list corresponds to
-                         the user's index.
-    n (int, optional): The number of similar users to find. Default is 10.
+        user_id (int): ID of the target user.
+        similarities (list[float]): List of similarity scores, where the index corresponds to the user's index.
+        n (int, optional): Number of similar users to retrieve. Defaults to 10.
 
     Returns:
-    list: The indices of the top n most similar users.
+        list[int]: Indices of the top n most similar users.
+
+    Raises:
+        ValueError: If user_id is out of bounds, similarities is not a valid list, or n is not a valid count.
 
     Example:
-    find_similar_users(0, [0.1, 0.3, 0.2]) will return [1, 2], which are the indices of the users most similar to the
-    user at index 0.
+        >>> find_similar_users(0, [0.1, 0.3, 0.2])
+        This will output [1, 2], indicating the indices of users most similar to the user at index 0.
+
+    Note:
+        Similarity scores should be in the range [0, 1] where a higher value indicates greater similarity.
     """
 
     if not isinstance(user_id, int) or user_id < 0 or user_id >= len(similarities):
@@ -203,26 +210,26 @@ def load_data_from_excel(file_path):
 
 def encrypt_vector(vector, context):
     """
-    Encrypts a vector using the CKKS scheme.
+    Encrypts a vector using the CKKS encryption scheme.
 
     Parameters:
-        vector (list): A non-empty list of values that need to be encrypted.
-        context: A context required by the CKKS scheme for encryption.
+        vector (list): List of values to be encrypted. Must be non-empty.
+        context: Context required by the CKKS encryption scheme.
 
     Returns:
-        An encrypted version of the input vector.
+        Encrypted version of the input vector.
+
     Raises:
-        ValueError: If the input vector is not a list or is an empty list.
-        Exception: If any other error occurs during the encryption process.
+        ValueError: If vector is not a list or is empty.
+        Exception: If any error occurs during encryption.
 
-    Description:
-        This function encrypts an input vector using the CKKS scheme.
-        The CKKS scheme requires a context which should be provided as the second parameter.
+    Example:
+        >>> encrypted_vector = encrypt_vector([1.2, 3.4, 5.6], context)
+        This encrypts the vector [1.2, 3.4, 5.6] using the provided CKKS context.
 
-    Before starting the encryption process, the function checks if the input vector is a list and if it's not empty.
-    If either of these conditions is not met, a ValueError is raised.
-    The encryption process is logged at the beginning and end for tracking purposes.
-    If any error occurs during the encryption, it's logged as an error message and the exception is raised further.
+    Note:
+        Ensure the TenSEAL library (as ts) and the logging library are imported.
+        This function uses the CKKS encryption scheme from TenSEAL for vector encryption.
     """
     try:
         # Check if vector is a list and not empty
@@ -251,23 +258,32 @@ def decrypt_vector(encrypted_vector):
 
 def recommend_items(user_index, similar_users_indices, data, n=10):
     """
-    Recommend items to a user based on the ratings of similar users. The function first finds the items that similar
-    users have rated highly (with a rating of 4 or more) and which the given user hasn't rated. The items are then
-    recommended based on their popularity among the similar users.
+    Recommends items to a user based on the ratings of similar users.
+
+    This function identifies items that similar users have rated highly (rating of 4 or more)
+    and which the target user hasn't rated yet. The items are then ranked based on their
+    popularity among the similar users.
 
     Parameters:
-    user_index (int): The index of the user to whom we want to make recommendations.
-    similar_users_indices (list): The indices of the users who are similar to the given user.
-    data (pd.DataFrame): The data frame that contains the ratings of the users. It should have columns named 'User_ID',
-                         'Item_ID', and 'Rating'.
-    n (int, optional): The number of recommendations to make. Default is 10.
+        user_index (int): Index of the target user for recommendations.
+        similar_users_indices (list[int]): Indices of users considered similar to the target user.
+        data (pd.DataFrame): Data frame containing users' ratings. Expected columns: 'User_ID', 'Item_ID', 'Rating'.
+        n (int, optional): Number of recommendations desired. Defaults to 10.
 
     Returns:
-    list: The IDs of the top n recommended items.
+        list[int]: IDs of the top n recommended items.
+
+    Raises:
+        ValueError: If data doesn't contain the expected columns or if ratings are outside the range 1-5.
+        IndexError: If user_index or any index in similar_users_indices is out of bounds.
 
     Example:
-    recommend_items(0, [1, 2, 3], data) will find the top 10 items to recommend to the user at index 0, based on the
-    ratings of the users at indices 1, 2, and 3.
+        >>> recommend_items(0, [1, 2, 3], data)
+        This will determine the top 10 items to recommend to the user at index 0 based on
+        the ratings from users at indices 1, 2, and 3.
+
+    Note:
+        Ensure that the pandas library (as pd) is imported before using this function.
     """
     if not {'User_ID', 'Item_ID', 'Rating'}.issubset(data.columns):
         raise ValueError("The data DataFrame must contain 'User_ID', 'Item_ID', and 'Rating' columns.")
@@ -311,21 +327,28 @@ def recommend_items(user_index, similar_users_indices, data, n=10):
 
 def generate_synthetic_data(participant_count: int, items_per_participant: int) -> None:
     """
-    Generates synthetic data for a specified number of participants, with a certain number of items per participant.
-    Each item consists of a random user ID and a random rating. The data is saved into individual Excel files for each
-    participant and a combined Excel file for all participants.
+    Generates synthetic data for a given number of participants with specified items per participant.
+
+    This function creates synthetic data for a defined number of participants, where each participant
+    has a certain number of items. Each item consists of a random user ID and a random rating.
+    The generated data is saved into individual Excel files for each participant and a
+    combined Excel file for all participants.
 
     Parameters:
-    participant_count (int): The number of participants for whom to generate data.
-    items_per_participant (int): The number of items per participant to be generated.
+        participant_count (int): Number of participants for which data should be generated.
+        items_per_participant (int): Number of items per participant.
 
-    Returns:
-    None
+    Raises:
+        ValueError: If participant_count or items_per_participant is not a positive integer.
 
     Example:
-    generate_synthetic_data(10, 5) will generate data for 10 participants, each with 5 items. It will create 10
-    individual Excel files (named as 'participant_1_data.xlsx', 'participant_2_data.xlsx', etc.) and one combined Excel
-    file (named as 'combined_participant_data.xlsx').
+        >>> generate_synthetic_data(10, 5)
+        This will generate data for 10 participants, each with 5 items. It will create 10
+        individual Excel files (e.g., 'participant_1_data.xlsx', 'participant_2_data.xlsx')
+        and one combined Excel file named 'combined_participant_data.xlsx'.
+
+    Note:
+        Ensure that pandas (pd) and random libraries are imported before using this function.
     """
 
     if not (isinstance(participant_count, int) and participant_count > 0):
@@ -376,10 +399,10 @@ def detect_anomalies(data):
     data consistency based on predefined rules.
 
     Parameters:
-    - data (pd.DataFrame): The synthetic data containing 'User_ID', 'Item_ID', and 'Rating' columns.
+       data (pd.DataFrame): The synthetic data containing 'User_ID', 'Item_ID', and 'Rating' columns.
 
     Raises:
-    - ValueError: If anomalies are detected or data consistency rules are violated.
+       ValueError: If anomalies are detected or data consistency rules are violated.
     """
     # Feature Engineering
     user_item_count = data.groupby('User_ID')['Item_ID'].count()
@@ -452,12 +475,12 @@ def factorize_and_recommend(data, user_id, num_items=5):
     Factorizes the user-item matrix using SVD and returns the top-rated items for a given user.
 
     Parameters:
-    - data: DataFrame containing User_ID, Item_ID, and Rating columns.
-    - user_id: ID of the user.
-    - num_items: Number of top-rated items to return.
+      data: DataFrame containing User_ID, Item_ID, and Rating columns.
+      user_id: ID of the user.
+      num_items: Number of top-rated items to return.
 
     Returns:
-    - Top-rated items for the user.
+      Top-rated items for the user.
     """
     # Ensure data contains required columns
     required_columns = {'User_ID', 'Item_ID', 'Rating'}
